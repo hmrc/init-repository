@@ -17,30 +17,34 @@
 package uk.gov.hmrc.initrepository
 
 import java.net.URL
-import java.util.concurrent.TimeUnit
 
+import play.api.libs.json.JsValue
+import play.api.libs.ws._
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient}
-import play.api.libs.ws.{WSClientConfig, WSAuthScheme, WSResponse}
-import play.api.mvc.Results
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 
 class BintrayUrls(apiRoot:String = "https://bintray.com/api/v1"){
-  def containsRepoUrl(org: String, repo: String):URL = ???
+  def containsPackage(repoName: String, packageName: String):URL =
+    new URL(s"$apiRoot/packages/hmrc/$repoName/$packageName")
 }
 
-class Bintray(bintrayHttp:BintrayHttp, bintrayUrls:BintrayUrls){
+class Bintray(http:BintrayHttp, urls:BintrayUrls){
 
   def createRepo(repoName: String) = ???
 
   val log = new Logger()
 
-  def containsRepo(repo: String): Try[Boolean] = {
-    //val url = BintrayUrls.containsRepoUrl(org, repo)
-    ???
+  def containsPackage(repoName: String, packageName:String): Future[Boolean] = {
+    val req = http.buildJsonCall("GET", urls.containsPackage(repoName, packageName))
+
+    req.execute() flatMap { res => res.status match {
+      case 200 => Future.successful(true)
+      case 404 => Future.successful(false)
+      case _   => Future.failed(new RequestException(req, res))
+    }}
   }
 }
 
@@ -53,40 +57,23 @@ trait BintrayHttp{
 
   val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new WSClientConfig()).build())
 
+  def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequestHolder= {
+    log.debug(s"bintray client_id ${creds.user.takeRight(5)}")
+    log.debug(s"bintray client_secret ${creds.pass.takeRight(5)}")
 
-  def apiWs(url:String) = ws.url(url)
-    .withAuth(
-      creds.user, creds.pass, WSAuthScheme.BASIC)
-    .withHeaders("content-type" -> "application/json")
+    val req = ws.url(url.toString)
+      .withMethod(method)
+      .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
+      .withQueryString(
+        "client_id" -> creds.user,
+        "client_secret" -> creds.pass)
+      .withHeaders(
+        "content-type" -> "application/json")
 
-  def emptyPost(url:String): Try[Unit] = {
-    log.info(s"posting file to $url")
+    println("req = " + req)
 
-    val call = apiWs(url).post(Results.EmptyContent())
-
-    val result: WSResponse = Await.result(call, Duration.apply(5, TimeUnit.MINUTES))
-
-    //log.info(s"result ${result.status} - ${result.statusText}")
-
-    result.status match {
-      case s if s >= 200 && s < 300 => Success(new URL(url))
-      case _@e => Failure(new scala.Exception(s"Didn't get expected status code when writing to Bintray. Got status ${result.status}: ${result.body}"))
-    }
+    body.map { b =>
+      req.withBody(b)
+    }.getOrElse(req)
   }
-
-  def get[A](url:String): Try[String] ={
-    log.info(s"getting file from $url")
-
-    val call = apiWs(url).get()
-
-    val result: WSResponse = Await.result(call, Duration.apply(5, TimeUnit.MINUTES))
-
-    //log.info(s"result ${result.status} - ${result.statusText} - ${result.body}")
-
-    result.status match {
-      case s if s >= 200 && s < 300 => Success(result.body)
-      case _@e => Failure(new scala.Exception(s"Didn't get expected status code when writing to Bintray. Got status ${result.status}: ${result.body}"))
-    }
-  }
-
 }

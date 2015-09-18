@@ -47,7 +47,7 @@ object Main {
     
     github.containsRepo(newRepoName) map { containsRepo =>
       if(!containsRepo){
-        bintray.containsRepo(newRepoName) map { bintrayRepoExists =>
+        bintray.containsPackage("releases", newRepoName) map { bintrayRepoExists =>
           if(!bintrayRepoExists){
             bintray.createRepo(newRepoName)
             github.createRepo(newRepoName)

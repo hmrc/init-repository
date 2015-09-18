@@ -16,6 +16,10 @@
 
 package uk.gov.hmrc.initrepository
 
+import com.github.tomakehurst.wiremock.client.{ResponseDefinitionBuilder, MappingBuilder, RequestPatternBuilder}
+import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.http.RequestMethod
+import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{WordSpec, Matchers, WordSpecLike}
 
 
@@ -25,12 +29,72 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
     override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
-  val bintrayUrls = new BintrayUrls(apiRoot = endpointMockUrl)
+  val bintray = new Bintray(new FakeBintrayHttp, new BintrayUrls(apiRoot = endpointMockUrl))
+  
+  "Bintray.containsPackage" should {
 
-  "Bintray.containsRepo" should {
+    "return true when bintray returns 200" in {
 
-    val bintray: Bintray = new Bintray(new FakeBintrayHttp(), bintrayUrls)
+      givenServerExpects(
+        method = GET,
+        url = "/packages/hmrc/releases/domain",
+        willRespondWith = (200, None)
+      )
+
+      bintray.containsPackage("releases", "domain").await// shouldBe true
+
+    }
+
+    "return false when bintray returns 404" in {
+
+      givenServerExpects(
+        method = GET,
+        url = "/packages/hmrc/releases/domain",
+        willRespondWith = (404, None)
+      )
+
+      bintray.containsPackage("releases", "domain").await shouldBe false
+    }
+
+    "return false when bintray returns anything other than 200 or 404" in {
+
+      givenServerExpects(
+        method = GET,
+        url = "/packages/hmrc/releases/domain",
+        willRespondWith = (999, None)
+      )
+
+      bintray.containsPackage("releases", "domain").await shouldBe false
+    }
+  }
+
+  def assertRequest(method:RequestMethod, url:String, body:Option[String]): Unit ={
+    val builder = new RequestPatternBuilder(method, urlEqualTo(url))
+    body.map{ b =>
+      builder.withRequestBody(equalToJson(b))
+    }.getOrElse(builder)
+    endpointMock.verifyThat(builder)
+  }
 
 
+  def givenServerExpects(method:RequestMethod, url:String, willRespondWith: (Int, Option[String])): Unit = {
+
+    val builder = new MappingBuilder(method, urlEqualTo(url))
+      .withHeader("Content-Type", equalTo("application/json"))
+
+    val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
+      .withStatus(willRespondWith._1)
+
+    val resp = willRespondWith._2.map { b =>
+      response.withBody(b)
+    }.getOrElse(response)
+
+    willRespondWith._2.map { b =>
+      builder.withRequestBody(equalToJson(b))
+    }.getOrElse(builder)
+
+    builder.willReturn(resp)
+
+    endpointMock.register(builder)
   }
 }
