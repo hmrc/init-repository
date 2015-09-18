@@ -30,5 +30,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
   "Bintray.containsRepo" should {
 
     val bintray: Bintray = new Bintray(new FakeBintrayHttp(), bintrayUrls)
+
+
   }
 }

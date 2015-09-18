@@ -23,8 +23,8 @@ class GithubUrlsSpecs extends WordSpec with Matchers {
 
   "GithubUrls.containsRepo" should {
     "generate correct repo url " in {
-      new GithubUrls().containsRepoUrl("domain").toString shouldBe
-        "https://github.com/hmrc/domain"
+      new GithubUrls().containsRepo("domain").toString shouldBe
+        "https://api.github.com/repos/hmrc/domain"
     }
 
     "generate correct create repo url " in {

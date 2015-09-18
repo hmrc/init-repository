@@ -38,6 +38,7 @@ object HmrcBuild extends Build {
         resolvers += Resolver.typesafeRepo("releases"),
         BuildDescriptionSettings(),
         AssemblySettings(),
+        parallelExecution := false,
         addArtifact(artifact in (Compile, assembly), assembly)
       )
 }

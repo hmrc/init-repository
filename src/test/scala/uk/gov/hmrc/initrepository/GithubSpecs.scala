@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.initrepository
 
 import com.github.tomakehurst.wiremock.client.WireMock._
@@ -16,21 +32,47 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
   }
 
   val githubUrls = new GithubUrls(apiRoot = endpointMockUrl)
+  val github: Github = new Github(new FakeGithubHttp(), githubUrls)
 
   "Github.containsRepo" should {
-
-    val github: Github = new Github(new FakeGithubHttp(), githubUrls)
 
     "return true when github returns 200" in {
 
       givenGitHubExpects(
-        method = HEAD,
-        url = "/hmrc/domain",
+        method = GET,
+        url = "/repos/hmrc/domain?client_id=&client_secret=",
         willRespondWith = (200, None)
       )
 
       github.containsRepo("domain").await shouldBe true
     }
+
+    "return false when github returns 404" in {
+
+      givenGitHubExpects(
+        method = GET,
+        url = "/repos/hmrc/domain?client_id=&client_secret=",
+        willRespondWith = (404, None)
+      )
+
+      github.containsRepo("domain").await shouldBe false
+    }
+
+    "throw exception when github returns anything other than 200 or 404" in {
+
+      givenGitHubExpects(
+        method = GET,
+        url = "/repos/hmrc/domain?client_id=&client_secret=",
+        willRespondWith = (999, None)
+      )
+
+      intercept[RequestException]{
+        github.containsRepo("domain").await
+      }
+    }
+  }
+
+  "Github.createRepo" should {
 
     "successfully create repo" in {
 
@@ -87,8 +129,6 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
   def givenGitHubExpects(method:RequestMethod, url:String, willRespondWith: (Int, Option[String])): Unit = {
 
-
-//    def givenGitHubExpects(req:GithubRequest, willRespondWith: (Int, Option[String])): Unit = {
     val builder = new MappingBuilder(method, urlEqualTo(url))
       .withHeader("Content-Type", equalTo("application/json"))
 

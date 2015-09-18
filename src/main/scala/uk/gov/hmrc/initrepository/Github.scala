@@ -28,20 +28,30 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class GithubUrls(webRoot:String = "https://github.com/hmrc", apiRoot:String = "https://api.github.com"){
-  def createRepo: URL = new URL(s"$apiRoot/orgs/hmrc/repos")
+class GithubUrls(apiRoot:String = "https://api.github.com"){
 
-  def containsRepoUrl(repo:String):URL={
-    new URL(s"$webRoot/$repo")
-  }
+  val orgName = "hmrc"
+
+  def createRepo: URL = new URL(s"$apiRoot/orgs/$orgName/repos")
+
+  def containsRepo(repo:String) = new URL(s"$apiRoot/repos/$orgName/$repo")
+}
+
+class RequestException(request:WSRequest, response:WSResponse)
+  extends Exception(s"Got status ${response.status}: GET ${request.url} ${response.body}"){
+
 }
 
 class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
 
-  val orgName = "hmrc"
-
   def containsRepo(repoName: String): Future[Boolean] = {
-    githubHttp.head(githubUrls.containsRepoUrl(repoName)).map(r => {println(r);r == 200})
+    val req = githubHttp.buildJsonCall("GET", githubUrls.containsRepo(repoName))
+
+    req.execute().flatMap { res => res.status match {
+      case 200 => Future.successful(true)
+      case 404 => Future.successful(false)
+      case _   => Future.failed(new RequestException(req, res))
+    }}
   }
 
   def createRepo(repoName: String): Future[Unit] = {
@@ -84,13 +94,11 @@ trait GithubHttp{
       .withHeaders(
         "content-type" -> "application/json")
 
+    println("req = " + req)
+
     body.map { b =>
       req.withBody(b)
     }.getOrElse(req)
-  }
-
-  def head(url:URL):Future[Int]={
-    buildJsonCall("HEAD", url).execute().map(_.status)
   }
 
   def callAndWait(req:WSRequest): WSResponse = {
@@ -104,19 +112,24 @@ trait GithubHttp{
     result
   }
 
-  def get(url:URL): Try[Unit] = {
-    val result = callAndWait(buildJsonCall("GET", url))
-    result.status match {
-      case s if s >= 200 && s < 300 => Success(Unit)
-      case _@e => Failure(new scala.Exception(s"Didn't get expected status code when writing to Github. Got status ${result.status}: ${result.body}"))
-    }
+  def getBody(url:URL): Future[String] = {
+    get(url).map(_.body)
+  }
+
+  def get(url:URL): Future[WSResponse] = {
+    println("url = " + url)
+    val resultF = buildJsonCall("GET", url).execute()
+    resultF.flatMap { res => res.status match {
+      case s if s >= 200 && s < 300 => Future.successful(res)
+      case _@e => Future.failed(new scala.Exception(s"Didn't get expected status code when reading from Github. Got status ${res.status}: GET ${url} ${res.body}"))
+    }}
   }
 
   def post[A](responseBuilder:(WSResponse) => Try[A])(url:URL, body:JsValue): Try[A] = {
     val result = callAndWait(buildJsonCall("POST", url, Some(body)))
     result.status match {
       case s if s >= 200 && s < 300 => responseBuilder(result)
-      case _@e => Failure(new scala.Exception(s"Didn't get expected status code when writing to Github. Got status ${result.status}: ${result.body}"))
+      case _@e => Failure(new scala.Exception(s"Didn't get expected status code when reading from Github. Got status ${result.status}: GET ${url} ${result.body}"))
     }
   }
 
@@ -125,7 +138,7 @@ trait GithubHttp{
     buildJsonCall("POST", url, Some(Json.parse(body))).execute().flatMap { case result =>
       result.status match {
         case s if s >= 200 && s < 300 => Future.successful(result.body)
-        case _@e => Future.failed(new scala.Exception(s"Didn't get expected status code when writing to Github. Got status ${result.status}: ${result.body}"))
+        case _@e => Future.failed(new scala.Exception(s"Didn't get expected status code when writing to Github. Got status ${result.status}: POST ${url} ${result.body}"))
       }
     }
 //    result.status match {
