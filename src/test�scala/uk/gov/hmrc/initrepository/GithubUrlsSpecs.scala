@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.hello
+package uk.gov.hmrc.initrepository
 
-import org.scalatest.Matchers._
-import org.scalatest.WordSpecLike
+import org.scalatest.{Matchers, WordSpec}
 
 
-class HelloWorldSpecs extends WordSpecLike {
+class GithubUrlsSpecs extends WordSpec with Matchers {
 
-  "HelloWorld" should {
+  "GithubUrls.containsRepo" should {
+    "generate correct repo url " in {
+      new GithubUrls().containsRepoUrl("domain").toString shouldBe
+        "https://github.com/hmrc/domain"
+    }
 
-    "say hello" in {
-      HelloWorld.sayHello shouldBe "hello"
+    "generate correct create repo url " in {
+      new GithubUrls().createRepo.toString shouldBe
+        "https://api.github.com/orgs/hmrc/repos"
     }
   }
-}
+
+ }
+

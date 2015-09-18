@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.hello
+package uk.gov.hmrc.initrepository
 
-object HelloWorld {
+import org.scalatest.{Matchers, WordSpecLike}
 
-  def main(args: Array[String]) {
-    println(sayHello)
-  }
 
-  def sayHello:String = "hello"
+class BintraySpecs extends WordSpecLike with Matchers{
+
 }
