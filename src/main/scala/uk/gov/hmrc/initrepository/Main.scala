@@ -20,10 +20,12 @@ object Main {
     val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
 
     val github  = new Github(new GithubHttp{
-      override def cred: ServiceCredentials = githubCredsOpt.get
+      override def creds: ServiceCredentials = githubCredsOpt.get
     }, new GithubUrls())
 
-    val bintray = new Bintray(new BintrayHttp(githubCredsOpt.get))
+    val bintray = new Bintray(new BintrayHttp{
+      override def creds: ServiceCredentials = githubCredsOpt.get
+    }, new BintrayUrls())
 
     val newRepoName = "domain"
     

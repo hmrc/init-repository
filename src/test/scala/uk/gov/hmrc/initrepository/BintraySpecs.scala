@@ -16,9 +16,19 @@
 
 package uk.gov.hmrc.initrepository
 
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.{WordSpec, Matchers, WordSpecLike}
 
 
-class BintraySpecs extends WordSpecLike with Matchers{
+class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {
 
+  class FakeBintrayHttp extends BintrayHttp {
+    override def creds: ServiceCredentials = ServiceCredentials("", "")
+  }
+
+  val bintrayUrls = new BintrayUrls(apiRoot = endpointMockUrl)
+
+  "Bintray.containsRepo" should {
+
+    val bintray: Bintray = new Bintray(new FakeBintrayHttp(), bintrayUrls)
+  }
 }

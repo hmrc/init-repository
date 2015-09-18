@@ -1,54 +1,18 @@
 package uk.gov.hmrc.initrepository
 
-import java.net.URL
-
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.client.{MappingBuilder, RequestPatternBuilder, ResponseDefinitionBuilder, WireMock}
+import com.github.tomakehurst.wiremock.client.{MappingBuilder, RequestPatternBuilder, ResponseDefinitionBuilder}
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.Json
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-import scala.collection.JavaConversions._
 
-trait FutureValues {
-
-  import scala.concurrent.duration._
-  import scala.concurrent.{Await, Future}
-
-  implicit val defaultTimeout = 5 seconds
-
-  implicit def extractAwait[A](future: Future[A]) = awaitResult[A](future)
-
-  def awaitResult[A](future: Future[A])(implicit timeout: Duration) = Await.result(future, timeout)
-
-  implicit class FuturePimp[T](future: Future[T]) {
-    def await: T = {
-      Await.result(future, defaultTimeout)
-    }
-
-    def awaitWasSuccess: Unit = {
-      future.onComplete {
-        case Success(value) => println(s"Got the callback, meaning = $value")
-        case Failure(e) => throw e
-      }
-      Await.result(future, defaultTimeout)
-    }
-
-    def awaitForSuccessfulCompletion: Unit = {
-      Await.result(future, defaultTimeout)
-    }
-  }
-
-}
 
 class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {
 
   class FakeGithubHttp extends GithubHttp {
-    override def cred: ServiceCredentials = ServiceCredentials("", "")
+    override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
   val githubUrls = new GithubUrls(apiRoot = endpointMockUrl)
@@ -76,7 +40,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
         willRespondWith = (201, None)
       )
 
-      github.createRepo("domain").awaitForSuccessfulCompletion
+      github.createRepo("domain").awaitSuccessOrThrow
 
       assertRequest(
         method = POST,

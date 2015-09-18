@@ -28,15 +28,13 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 
-object BintrayUrls{
+class BintrayUrls(apiRoot:String = "https://bintray.com/api/v1"){
   def containsRepoUrl(org: String, repo: String):URL = ???
-
 }
 
-class Bintray(bintrayHttp:BintrayHttp){
+class Bintray(bintrayHttp:BintrayHttp, bintrayUrls:BintrayUrls){
 
   def createRepo(repoName: String) = ???
-
 
   val log = new Logger()
 
@@ -44,17 +42,12 @@ class Bintray(bintrayHttp:BintrayHttp){
     //val url = BintrayUrls.containsRepoUrl(org, repo)
     ???
   }
-
-
-  //  def publish(version: VersionDescriptor):Try[Unit]={
-//    val url = bintrayPaths.publishUrlFor(version)
-//    bintrayHttp.emptyPost(url)
-//  }
-
 }
 
 
-class BintrayHttp(creds:ServiceCredentials){
+trait BintrayHttp{
+
+  def creds:ServiceCredentials
 
   val log = new Logger()
 

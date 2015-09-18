@@ -65,23 +65,22 @@ case class SimpleResponse(status:Int, rawBody:String)
 
 trait GithubHttp{
 
-  def cred:ServiceCredentials
-  //def http:Http
+  def creds:ServiceCredentials
 
   val log = new Logger()
 
   val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new NingWSClientConfig()).build())
 
   def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequestHolder={
-    log.debug(s"github client_id ${cred.user.takeRight(5)}")
-    log.debug(s"github client_secret ${cred.pass.takeRight(5)}")
+    log.debug(s"github client_id ${creds.user.takeRight(5)}")
+    log.debug(s"github client_secret ${creds.pass.takeRight(5)}")
 
     val req = ws.url(url.toString)
       .withMethod(method)
-      .withAuth(cred.user, cred.pass, WSAuthScheme.BASIC)
+      .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
       .withQueryString(
-        "client_id" -> cred.user,
-        "client_secret" -> cred.pass)
+        "client_id" -> creds.user,
+        "client_secret" -> creds.pass)
       .withHeaders(
         "content-type" -> "application/json")
 
