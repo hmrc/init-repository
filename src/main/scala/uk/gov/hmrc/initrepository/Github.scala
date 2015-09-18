@@ -38,7 +38,7 @@ class GithubUrls(apiRoot:String = "https://api.github.com"){
 }
 
 class RequestException(request:WSRequest, response:WSResponse)
-  extends Exception(s"Got status ${response.status}: GET ${request.url} ${response.body}"){
+  extends Exception(s"Got status ${response.status}: ${request.method} ${request.url} ${response.body}"){
 
 }
 

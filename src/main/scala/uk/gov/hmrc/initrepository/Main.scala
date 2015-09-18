@@ -44,12 +44,14 @@ object Main {
     }, new BintrayUrls())
 
     val newRepoName = "domain"
+    val repo = "releases"
     
     github.containsRepo(newRepoName) map { containsRepo =>
       if(!containsRepo){
         bintray.containsPackage("releases", newRepoName) map { bintrayRepoExists =>
           if(!bintrayRepoExists){
-            bintray.createRepo(newRepoName)
+            bintray.createPackage("releases", newRepoName)
+            bintray.createPackage("release-candidates", newRepoName)
             github.createRepo(newRepoName)
           }
         }

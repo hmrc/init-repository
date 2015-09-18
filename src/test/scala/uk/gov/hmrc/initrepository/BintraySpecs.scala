@@ -63,8 +63,52 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
         url = "/packages/hmrc/releases/domain",
         willRespondWith = (999, None)
       )
+      intercept[RequestException]{
+        bintray.containsPackage("releases", "domain").await
+      }
+    }
+  }
 
-      bintray.containsPackage("releases", "domain").await shouldBe false
+  "Bintray.containsPackage" should {
+    "create a package" in {
+
+      givenServerExpects(
+        method = POST,
+        url = "/packages/hmrc/releases/domain",
+        willRespondWith = (201, None)
+      )
+
+      printMappings
+      bintray.createPackage("releases", "domain").awaitSuccess
+
+      assertRequest(
+        method = POST,
+        url = "/packages/hmrc/releases/domain",
+        body = Some(""" {
+                      |    "name": "domain",
+                      |    "desc": "domain releases",
+                      |    "labels": [],
+                      |    "licenses": ["Apache-2.0"],
+                      |    "vcs_url": "https://github.com/hmrc/domain",
+                      |    "website_url": "https://github.com/hmrc/domain",
+                      |    "issue_tracker_url": "https://github.com/hmrc/domain/issues",
+                      |    "github_repo": "hmrc/domain",
+                      |    "public_download_numbers": true,
+                      |    "public_stats": true
+                      |}""".stripMargin)
+      )
+    }
+
+    "return future.failed when repo isn't created" in {
+      givenServerExpects(
+        method = POST,
+        url = "/packages/hmrc/releases/domain",
+        willRespondWith = (999, None)
+      )
+
+      intercept[RequestException]{
+        bintray.createPackage("releases", "domain").awaitFailure
+      }
     }
   }
 
