@@ -48,7 +48,7 @@ trait FutureValues {
 
     def awaitSuccessOrThrow: Unit = {
       future.onComplete {
-        case Success(value) => println(s"Got the callback, meaning = $value")
+        case Success(value) => Unit
         case Failure(e) => throw e
       }
       Await.result(future, defaultTimeout)

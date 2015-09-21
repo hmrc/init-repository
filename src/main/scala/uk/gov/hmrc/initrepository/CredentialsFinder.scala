@@ -18,6 +18,8 @@ package uk.gov.hmrc.initrepository
 
 import java.nio.file.Path
 
+import play.api.Logger
+
 import scala.io.Source
 
 case class ServiceCredentials(user:String, pass:String)
@@ -41,8 +43,6 @@ object CredentialsFinder {
 
 class ConfigFile(file: Path) {
 
-  val logger = new Logger
-
   private val kvMap: Map[String, String] = {
     try {
       Source.fromFile(file.toFile)
@@ -51,7 +51,7 @@ class ConfigFile(file: Path) {
         .map { case Array(key, value) => key.trim -> value.trim}.toMap
     } catch {
       case e: Exception => {
-        logger.info(s"error parsing $file ${e.getMessage}")
+        Log.warn(s"error parsing $file ${e.getMessage}")
         Map.empty
       }
     }

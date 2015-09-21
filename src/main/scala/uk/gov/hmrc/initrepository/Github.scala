@@ -19,7 +19,8 @@ package uk.gov.hmrc.initrepository
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
-import play.api.libs.json.{Json, JsValue}
+import play.api.Logger
+import play.api.libs.json._
 import play.api.libs.ws._
 import play.api.libs.ws.ning.{NingWSClientConfig, NingAsyncHttpClientConfigBuilder, NingWSClient}
 
@@ -28,13 +29,17 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class GithubUrls(apiRoot:String = "https://api.github.com"){
-
-  val orgName = "hmrc"
+class GithubUrls( orgName:String = "hmrc",
+                  apiRoot:String = "https://api.github.com"){
 
   def createRepo: URL = new URL(s"$apiRoot/orgs/$orgName/repos")
 
   def containsRepo(repo:String) = new URL(s"$apiRoot/repos/$orgName/$repo")
+
+  def teams = new URL(s"$apiRoot/orgs/$orgName/teams")
+
+  def addTeamToRepo(repoName:String, teamId:Int) =
+    new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName") //?permission=push
 }
 
 class RequestException(request:WSRequest, response:WSResponse)
@@ -43,6 +48,37 @@ class RequestException(request:WSRequest, response:WSResponse)
 }
 
 class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
+  def teamId(team: String): Future[Option[Int]]={
+    val req = githubHttp.buildJsonCall("GET", githubUrls.teams)
+
+
+    req.execute().flatMap { res => res.status match {
+      case 200 => Future.successful(findIdForName(res.json, team))
+      case _   => Future.failed(new RequestException(req, res))
+    }}
+  }
+
+  def addRepoToTeam(repoName: String, teamId: Int):Future[Unit] = {
+    Log.info(s"Adding $repoName to team ${teamId}")
+
+    val req = githubHttp
+      .buildJsonCall("PUT", githubUrls.addTeamToRepo(repoName, teamId))
+      //.withHeaders("Accept" -> "application/vnd.github.ironman-preview+json")
+      //.withHeaders("Content-Length" -> "0")
+
+
+    req.execute().flatMap { res => res.status match {
+      case 204 => Future.successful(Unit)
+      case _   => Future.failed(new RequestException(req, res))
+    }}
+  }
+
+  def findIdForName(json:JsValue, teamName:String):Option[Int]={
+    json.as[JsArray].value
+      .find(j => (j \ "name").toOption.exists(s => s.as[JsString].value == teamName))
+      .map(j => (j \ "id").get.as[JsNumber].value.toInt)
+  }
+
 
   def containsRepo(repoName: String): Future[Boolean] = {
     val req = githubHttp.buildJsonCall("GET", githubUrls.containsRepo(repoName))
@@ -55,11 +91,12 @@ class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
   }
 
   def createRepo(repoName: String): Future[Unit] = {
+    Log.info(s"creating github repository with name '${repoName}'")
     val payload = s"""{
                     |    "name": "$repoName",
                     |    "description": "$repoName",
                     |    "homepage": "https://github.com",
-                    |    "private": true,
+                    |    "private": false,
                     |    "has_issues": true,
                     |    "has_wiki": true,
                     |    "has_downloads": true,
@@ -77,24 +114,19 @@ trait GithubHttp{
 
   def creds:ServiceCredentials
 
-  val log = new Logger()
+  private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new NingWSClientConfig()).build())
 
-  val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new NingWSClientConfig()).build())
+  def close() = ws.close()
 
-  def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequestHolder={
-    log.debug(s"github client_id ${creds.user.takeRight(5)}")
-    log.debug(s"github client_secret ${creds.pass.takeRight(5)}")
+  def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequest={
 
     val req = ws.url(url.toString)
       .withMethod(method)
       .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
-      .withQueryString(
-        "client_id" -> creds.user,
-        "client_secret" -> creds.pass)
       .withHeaders(
         "content-type" -> "application/json")
 
-    println("req = " + req)
+    Log.debug("req = " + req)
 
     body.map { b =>
       req.withBody(b)
@@ -103,11 +135,11 @@ trait GithubHttp{
 
   def callAndWait(req:WSRequest): WSResponse = {
 
-    log.info(s"${req.method} with ${req.url}")
+    Log.debug(s"${req.method} with ${req.url}")
 
     val result: WSResponse = Await.result(req.execute(), Duration.apply(1, TimeUnit.MINUTES))
 
-    log.info(s"${req.method} with ${req.url} result ${result.status} - ${result.statusText}")
+    Log.debug(s"${req.method} with ${req.url} result ${result.status} - ${result.statusText}")
 
     result
   }
@@ -117,7 +149,6 @@ trait GithubHttp{
   }
 
   def get(url:URL): Future[WSResponse] = {
-    println("url = " + url)
     val resultF = buildJsonCall("GET", url).execute()
     resultF.flatMap { res => res.status match {
       case s if s >= 200 && s < 300 => Future.successful(res)
@@ -134,7 +165,6 @@ trait GithubHttp{
   }
 
   def postJsonString(url:URL, body:String): Future[String] = {
-    println("postJsonString url = " + url)
     buildJsonCall("POST", url, Some(Json.parse(body))).execute().flatMap { case result =>
       result.status match {
         case s if s >= 200 && s < 300 => Future.successful(result.body)

@@ -74,7 +74,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
 
       givenServerExpects(
         method = POST,
-        url = "/packages/hmrc/releases/domain",
+        url = "/packages/hmrc/releases",
         willRespondWith = (201, None)
       )
 
@@ -83,7 +83,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
 
       assertRequest(
         method = POST,
-        url = "/packages/hmrc/releases/domain",
+        url = "/packages/hmrc/releases",
         body = Some(""" {
                       |    "name": "domain",
                       |    "desc": "domain releases",
@@ -102,7 +102,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
     "return future.failed when repo isn't created" in {
       givenServerExpects(
         method = POST,
-        url = "/packages/hmrc/releases/domain",
+        url = "/packages/hmrc/releases",
         willRespondWith = (999, None)
       )
 

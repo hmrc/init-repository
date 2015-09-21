@@ -40,7 +40,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
       givenGitHubExpects(
         method = GET,
-        url = "/repos/hmrc/domain?client_id=&client_secret=",
+        url = "/repos/hmrc/domain",
         willRespondWith = (200, None)
       )
 
@@ -51,7 +51,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
       givenGitHubExpects(
         method = GET,
-        url = "/repos/hmrc/domain?client_id=&client_secret=",
+        url = "/repos/hmrc/domain",
         willRespondWith = (404, None)
       )
 
@@ -62,7 +62,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
       givenGitHubExpects(
         method = GET,
-        url = "/repos/hmrc/domain?client_id=&client_secret=",
+        url = "/repos/hmrc/domain",
         willRespondWith = (999, None)
       )
 
@@ -72,13 +72,65 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     }
   }
 
+  "Github.teamId" should {
+    "find a team ID for a team name when the team exists" in {
+      givenGitHubExpects(
+        method = GET,
+        url = "/orgs/hmrc/teams",
+        willRespondWith = (200, Some(
+          """
+            |[
+            |  {
+            |    "id": 1,
+            |    "url": "https://api.github.com/teams/1",
+            |    "name": "Justice League"
+            |  },
+            |  {
+            |    "id": 2,
+            |    "url": "https://api.github.com/teams/1",
+            |    "name": "Auth"
+            |  }
+            |]
+          """.stripMargin))
+      )
+
+      printMappings
+      github.teamId("Auth").await.get shouldBe 2
+    }
+
+    "return None when the team does not exist" in {
+      givenGitHubExpects(
+        method = GET,
+        url = "/orgs/hmrc/teams",
+        willRespondWith = (200, Some(
+          """
+            |[
+            |  {
+            |    "id": 1,
+            |    "url": "https://api.github.com/teams/1",
+            |    "name": "Justice League"
+            |  },
+            |  {
+            |    "id": 2,
+            |    "url": "https://api.github.com/teams/1",
+            |    "name": "Auth"
+            |  }
+            |]
+          """.stripMargin))
+      )
+
+      printMappings
+      github.teamId("MDTP").await shouldBe None
+    }
+  }
+
   "Github.createRepo" should {
 
     "successfully create repo" in {
 
       givenGitHubExpects(
         method = POST,
-        url = "/orgs/hmrc/repos?client_id=&client_secret=",
+        url = "/orgs/hmrc/repos",
         willRespondWith = (201, None)
       )
 
@@ -86,17 +138,37 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
       assertRequest(
         method = POST,
-        url = "/orgs/hmrc/repos?client_id=&client_secret=",
+        url = "/orgs/hmrc/repos",
         body = Some("""{
                       |    "name": "domain",
                       |    "description": "domain",
                       |    "homepage": "https://github.com",
-                      |    "private": true,
+                      |    "private": false,
                       |    "has_issues": true,
                       |    "has_wiki": true,
                       |    "has_downloads": true,
                       |    "license_template": "apache-2.0"
                       |}""".stripMargin)
+      )
+    }
+  }
+
+  "Github.addRepoToTeam" should {
+    "add a repository to a team in" in {
+      givenGitHubExpects(
+        method = PUT,
+        url = "/teams/99/repos/hmrc/domain",//?permission=push",
+        willRespondWith = (204, None)
+      )
+
+      printMappings
+      github.addRepoToTeam("domain", 99).awaitSuccess
+
+      assertRequest(
+        method = PUT,
+        url = "/teams/99/repos/hmrc/domain",
+//        extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
+        body = None
       )
     }
   }
@@ -115,8 +187,16 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     }
   }
 
-  def assertRequest(method:RequestMethod, url:String, body:Option[String]): Unit ={
+  def assertRequest(
+                     method:RequestMethod,
+                     url:String,
+                     extraHeaders:Map[String,String] = Map(),
+                     body:Option[String]): Unit ={
     val builder = new RequestPatternBuilder(method, urlEqualTo(url))
+    extraHeaders.foreach { case(k, v) =>
+      builder.withHeader(k, equalTo(v))
+    }
+
     body.map{ b =>
       builder.withRequestBody(equalToJson(b))
     }.getOrElse(builder)
@@ -127,7 +207,11 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     endpointMock.verifyThat(req.req)
   }
 
-  def givenGitHubExpects(method:RequestMethod, url:String, willRespondWith: (Int, Option[String])): Unit = {
+  def givenGitHubExpects(
+                          method:RequestMethod,
+                          url:String,
+                          extraHeaders:Map[String,String] = Map(),
+                          willRespondWith: (Int, Option[String])): Unit = {
 
     val builder = new MappingBuilder(method, urlEqualTo(url))
       .withHeader("Content-Type", equalTo("application/json"))
@@ -138,10 +222,6 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     val resp = willRespondWith._2.map { b =>
       response.withBody(b)
     }.getOrElse(response)
-
-    willRespondWith._2.map { b =>
-      builder.withRequestBody(equalToJson(b))
-    }.getOrElse(builder)
 
     builder.willReturn(resp)
 

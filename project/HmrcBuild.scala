@@ -17,11 +17,7 @@ object HmrcBuild extends Build {
 
   val libraries = Seq(
     "com.typesafe.play" %% "play-ws" % "2.4.3",
-    "com.typesafe.play" %% "play-test" % "2.4.3",
-    "com.jsuereth" %% "scala-arm" % "1.4",
-    "commons-io" % "commons-io" % "2.4",
-    "com.github.scopt" %% "scopt" % "3.3.0",
-    "org.apache.commons" % "commons-compress" % "1.10",
+    "com.typesafe.play" %% "play-test" % "2.4.3" % "test",
     "org.scalatest" %% "scalatest" % "2.2.2" % "test",
     "org.pegdown" % "pegdown" % "1.4.2" % "test",
     "org.mockito" % "mockito-all" % "1.9.5" % "test",
@@ -45,7 +41,7 @@ object HmrcBuild extends Build {
 
 object AssemblySettings{
   def apply()= Seq(
-    assemblyJarName in assembly := "releaser.jar",
+    assemblyJarName in assembly := "init-repository.jar",
     assemblyMergeStrategy in assembly := {
       case PathList("org", "apache", "commons", "logging", xs@_*) => MergeStrategy.first
       case PathList("play", "core", "server", xs@_*) => MergeStrategy.first

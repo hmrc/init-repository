@@ -18,6 +18,7 @@ package uk.gov.hmrc.initrepository
 
 import java.net.URL
 
+import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.libs.ws._
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient}
@@ -30,21 +31,23 @@ class BintrayUrls(apiRoot:String = "https://bintray.com/api/v1"){
   def containsPackage(repoName: String, packageName: String):URL =
     new URL(s"$apiRoot/packages/hmrc/$repoName/$packageName")
 
-  def createPackage(repoName: String, packageName: String):URL =
-    new URL(s"$apiRoot/packages/hmrc/$repoName/$packageName")
+  def createPackage(repoName: String):URL =
+    new URL(s"$apiRoot/packages/hmrc/$repoName")
 }
 
 class Bintray(http:BintrayHttp, urls:BintrayUrls){
 
   def createPackage(repoName: String, packageName:String) :Future[Unit]={
+    Log.info(s"creating Bintray package with name '${packageName}' in repository '${repoName}'")
+
     val req = http.buildJsonCall(
       "POST",
-      urls.createPackage(repoName, packageName),
+      urls.createPackage(repoName),
       Some(buildCreatePackageMessage(repoName, packageName))
     )
 
-    req.execute() flatMap { res => println(res);res.status match {
-      case 201 => Future.successful()
+    req.execute() flatMap { res => res.status match {
+      case 201 => Future.successful(Unit)
       case _   => Future.failed(new RequestException(req, res))
     }}
   }
@@ -64,8 +67,6 @@ class Bintray(http:BintrayHttp, urls:BintrayUrls){
       |}""".stripMargin
   }
 
-  val log = new Logger()
-
   def containsPackage(repoName: String, packageName:String): Future[Boolean] = {
     val req = http.buildJsonCall("GET", urls.containsPackage(repoName, packageName))
 
@@ -82,13 +83,11 @@ trait BintrayHttp{
 
   def creds:ServiceCredentials
 
-  val log = new Logger()
+  private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new WSClientConfig()).build())
 
-  val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new WSClientConfig()).build())
+  def close() = ws.close()
 
-  def buildJsonCall(method:String, url:URL, body:Option[String] = None):WSRequestHolder= {
-    log.debug(s"bintray client_id ${creds.user.takeRight(5)}")
-    log.debug(s"bintray client_secret ${creds.pass.takeRight(5)}")
+  def buildJsonCall(method:String, url:URL, body:Option[String] = None):WSRequest= {
 
     val req = ws.url(url.toString)
       .withMethod(method)
@@ -98,8 +97,6 @@ trait BintrayHttp{
 //        "client_secret" -> creds.pass)
       .withHeaders(
         "content-type" -> "application/json")
-
-    println("req = " + req)
 
     body.map { b =>
       req.withBody(b)
