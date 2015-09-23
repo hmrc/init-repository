@@ -76,9 +76,9 @@ object Main {
           Log.info(s"Pre-conditions met, creating '$newRepoName'")
           for (_ <- github.createRepo(newRepoName).await;
                _ <- bintray.createPackage("releases", newRepoName);
-               _ <- bintray.createPackage("release-candidates", newRepoName);
-               teamIdO <- github.teamId(team);
-               _ <- addRepoToTeam(newRepoName, teamIdO)
+               _ <- bintray.createPackage("release-candidates", newRepoName)
+               //teamIdO <- github.teamId(team);
+               //_ <- addRepoToTeam(newRepoName, teamIdO)
           ) yield ()
         } else {
           Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))

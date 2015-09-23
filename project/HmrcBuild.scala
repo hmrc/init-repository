@@ -24,19 +24,17 @@ object HmrcBuild extends Build {
     "com.github.tomakehurst" % "wiremock" % "1.52" % "test"
   )
 
-
-
-    lazy val InitRepository = (project in file("."))
-      .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
-      .settings(
-        scalaVersion := "2.11.6",
-        libraryDependencies ++= libraries,
-        resolvers += Resolver.typesafeRepo("releases"),
-        BuildDescriptionSettings(),
-        AssemblySettings(),
-        parallelExecution := false,
-        addArtifact(artifact in (Compile, assembly), assembly)
-      )
+  lazy val InitRepository = (project in file("."))
+    .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
+    .settings(
+      scalaVersion := "2.11.6",
+      libraryDependencies ++= libraries,
+      resolvers += Resolver.typesafeRepo("releases"),
+      BuildDescriptionSettings(),
+      AssemblySettings(),
+      parallelExecution := false,
+      addArtifact(artifact in (Compile, assembly), assembly)
+    )
 }
 
 object AssemblySettings{
