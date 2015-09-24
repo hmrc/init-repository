@@ -5,8 +5,8 @@ init-repository
 
 This tool automatically creates repositories and settings for a new project on MDTP. Specifically it will:
 
-* Create a new github.com repository
-* Assign a given team access to the new github repository 
-* Create a new Bintray releases package
-* Create a new Bintray release-candidates package
+* Create a new GitHub repository in [HMRC on GitHub](https://www.github.com/hmrc) assigned to a given team
+* Create a new Bintray releases package in [HMRC on Bintray](https://www.bintray.com/hmrc)
+* Create a new Bintray release-candidates package [HMRC on Bintray](https://www.bintray.com/hmrc)
 
+The HMRC and Bintray credentials are intentionally omitted from this repository for security reasons. This repository is useless without them.
