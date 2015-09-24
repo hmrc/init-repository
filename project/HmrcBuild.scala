@@ -24,7 +24,7 @@ object HmrcBuild extends Build {
     "com.github.tomakehurst" % "wiremock" % "1.52" % "test"
   )
 
-  lazy val InitRepository = (project in file("."))
+  lazy val InitRepository = Project(appName, file("."))
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
     .settings(
       scalaVersion := "2.11.6",
