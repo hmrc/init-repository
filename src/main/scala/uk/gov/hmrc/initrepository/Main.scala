@@ -105,7 +105,7 @@ object Main {
     for(repoExists  <- github.containsRepo(newRepoName);
         releasesExists  <- bintray.containsPackage("releases", newRepoName);
         releaseCandExists <- bintray.containsPackage("release-candidates", newRepoName);
-        teamExists <- github.teamId(team).map(_.isDefined))
+        teamExists <- Future.successful(true))//github.teamId(team).map(_.isDefined))
       yield{
         if (repoExists)  Some(s"Repository with name '$newRepoName' already exists in github ")
         else if (releasesExists)  Some(s"Package with name '$newRepoName' already exists in bintray releases")
