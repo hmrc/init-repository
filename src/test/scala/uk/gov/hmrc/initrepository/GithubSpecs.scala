@@ -112,7 +112,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
             |  },
             |  {
             |    "id": 2,
-            |    "url": "https://api.github.com/teams/1",
+            |    "url": "https://api.github.com/teams/2",
             |    "name": "Auth"
             |  }
             |]
@@ -168,6 +168,26 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
         method = PUT,
         url = "/teams/99/repos/hmrc/domain",
 //        extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
+        body = None
+      )
+    }
+  }
+
+  "Github.addCollaboratorToRepository" should {
+    "add a repository to a team in" in {
+      givenGitHubExpects(
+        method = PUT,
+        url = "/repos/hmrc/domain/collaborators/aUser?permission=push",
+        willRespondWith = (204, None)
+      )
+
+      printMappings
+      github.addCollaboratorToRepository("aUser", "domain").awaitSuccess
+
+      assertRequest(
+        method = PUT,
+        url = "/repos/hmrc/domain/collaborators/aUser?permission=push",
+        extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
         body = None
       )
     }

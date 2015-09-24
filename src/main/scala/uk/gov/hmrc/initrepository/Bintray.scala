@@ -92,9 +92,6 @@ trait BintrayHttp{
     val req = ws.url(url.toString)
       .withMethod(method)
       .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
-//      .withQueryString(
-//        "client_id" -> creds.user,
-//        "client_secret" -> creds.pass)
       .withHeaders(
         "content-type" -> "application/json")
 

@@ -17,26 +17,28 @@
 package uk.gov.hmrc.initrepository
 
 import java.net.URL
-import java.util.concurrent.TimeUnit
 
-import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws._
-import play.api.libs.ws.ning.{NingWSClientConfig, NingAsyncHttpClientConfigBuilder, NingWSClient}
+import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient, NingWSClientConfig}
 
-import scala.concurrent.{Future, Await}
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class GithubUrls( orgName:String = "hmrc",
                   apiRoot:String = "https://api.github.com"){
 
-  def createRepo: URL = new URL(s"$apiRoot/orgs/$orgName/repos")
+  def createRepo: URL =
+    new URL(s"$apiRoot/orgs/$orgName/repos")
 
-  def containsRepo(repo:String) = new URL(s"$apiRoot/repos/$orgName/$repo")
+  def containsRepo(repo:String) =
+    new URL(s"$apiRoot/repos/$orgName/$repo")
 
-  def teams = new URL(s"$apiRoot/orgs/$orgName/teams")
+  def addCollaboratorToRepo(user:String, repo:String) =
+    new URL(s"$apiRoot/repos/$orgName/$repo/collaborators/$user?permission=push")
+
+  def teams =
+    new URL(s"$apiRoot/orgs/$orgName/teams")
 
   def addTeamToRepo(repoName:String, teamId:Int) =
     new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName") //?permission=push
@@ -48,6 +50,18 @@ class RequestException(request:WSRequest, response:WSResponse)
 }
 
 class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
+
+  def addCollaboratorToRepository(user: String, repository: String):Future[Unit] = {
+    val req = githubHttp.buildJsonCall("PUT", githubUrls.addCollaboratorToRepo(user, repository))
+      .withHeaders("Accept" -> "application/vnd.github.ironman-preview+json")
+
+
+    req.execute().flatMap { res => res.status match {
+      case 204 => Future.successful()
+      case _   => Future.failed(new RequestException(req, res))
+    }}
+  }
+
   def teamId(team: String): Future[Option[Int]]={
     val req = githubHttp.buildJsonCall("GET", githubUrls.teams)
 
@@ -133,17 +147,6 @@ trait GithubHttp{
     }.getOrElse(req)
   }
 
-  def callAndWait(req:WSRequest): WSResponse = {
-
-    Log.debug(s"${req.method} with ${req.url}")
-
-    val result: WSResponse = Await.result(req.execute(), Duration.apply(1, TimeUnit.MINUTES))
-
-    Log.debug(s"${req.method} with ${req.url} result ${result.status} - ${result.statusText}")
-
-    result
-  }
-
   def getBody(url:URL): Future[String] = {
     get(url).map(_.body)
   }
@@ -156,14 +159,6 @@ trait GithubHttp{
     }}
   }
 
-  def post[A](responseBuilder:(WSResponse) => Try[A])(url:URL, body:JsValue): Try[A] = {
-    val result = callAndWait(buildJsonCall("POST", url, Some(body)))
-    result.status match {
-      case s if s >= 200 && s < 300 => responseBuilder(result)
-      case _@e => Failure(new scala.Exception(s"Didn't get expected status code when reading from Github. Got status ${result.status}: GET ${url} ${result.body}"))
-    }
-  }
-
   def postJsonString(url:URL, body:String): Future[String] = {
     buildJsonCall("POST", url, Some(Json.parse(body))).execute().flatMap { case result =>
       result.status match {
@@ -171,13 +166,5 @@ trait GithubHttp{
         case _@e => Future.failed(new scala.Exception(s"Didn't get expected status code when writing to Github. Got status ${result.status}: POST ${url} ${result.body}"))
       }
     }
-//    result.status match {
-//      case s if s >= 200 && s < 300 => responseBuilder(result)
-//      case _@e => Failure(new scala.Exception(s"Didn't get expected status code when writing to Github. Got status ${result.status}: ${result.body}"))
-//    }
-  }
-
-  def postUnit(url:URL, body:JsValue): Try[Unit] = {
-    post[Unit](_ => Success(Unit))(url, body)
   }
 }

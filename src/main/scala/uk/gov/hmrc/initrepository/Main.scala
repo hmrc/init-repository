@@ -41,6 +41,8 @@ object Main {
 
   }
   val github  = new Github(githubHttp, new GithubUrls())
+  
+  val HmrcWebOpsUserName = "hmrc-web-operations"
 
   private val bintrayHttp: BintrayHttp with Object {def creds: ServiceCredentials} = new BintrayHttp {
     override def creds: ServiceCredentials = bintrayCredsOpt.get
@@ -75,6 +77,7 @@ object Main {
         if (error.isEmpty) {
           Log.info(s"Pre-conditions met, creating '$newRepoName'")
           for (_ <- github.createRepo(newRepoName).await;
+               _ <- github.addCollaboratorToRepository(HmrcWebOpsUserName, newRepoName);
                _ <- bintray.createPackage("releases", newRepoName);
                _ <- bintray.createPackage("release-candidates", newRepoName)
                //teamIdO <- github.teamId(team);
