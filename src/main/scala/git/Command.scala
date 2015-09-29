@@ -44,9 +44,9 @@ object Command {
     }
   }
 
-  def run(cmd:Array[String]):Future[List[String]]= {
+  def runArray(cmd:Array[String], inDir:Option[Path] = None):Future[List[String]]= {
     Future {
-      val pb = Process(cmd)
+      val pb = inDir.fold(Process(cmd)) { path => Process(cmd, cwd = path.toFile) }
 
       val out = ListBuffer[String]()
       val err = ListBuffer[String]()

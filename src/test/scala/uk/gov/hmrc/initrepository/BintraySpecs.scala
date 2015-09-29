@@ -79,7 +79,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       )
 
       printMappings
-      bintray.createPackage("releases", "domain").awaitSuccess
+      bintray.createPackage("releases", "domain").awaitSuccess()
 
       assertRequest(
         method = POST,
@@ -107,7 +107,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       )
 
       intercept[RequestException]{
-        bintray.createPackage("releases", "domain").awaitFailure
+        bintray.createPackage("releases", "domain").awaitFailure()
       }
     }
   }

@@ -32,6 +32,15 @@ object Git{
 
 class LocalGitStore(workspace:Path) {
 
+
+  val orgName = "HMRC"
+
+  val gitCommand = Await.result(Command.run("which git"), 5.seconds).head.trim
+
+  git("--version").map{ _.headOption.getOrElse("<no output from git>")}.foreach { version =>
+    println(s"using git version $version")
+  }
+
   def commitFileToRoot(repoName: String, fileName:String, fileContent: String): Future[Unit]= {
     val target: Path = workspace.resolve(repoName).resolve(fileName)
     if (!target.toFile.exists()) {
@@ -54,21 +63,14 @@ class LocalGitStore(workspace:Path) {
     git("rev-list HEAD --count", inRepo = Some(repoName)).map(_.head.trim.toInt)
   }
 
-  val orgName = "HMRC"
-
-  val gitCommand = Await.result(Command.run("which git"), 5.seconds).head.trim
-  println(s"using it at $gitCommand")
-
   def gitCommandParts(commandParts:Array[String], inRepo:Option[String] = None):Future[List[String]]={
-    val repo = inRepo.map(r =>  "/" + r).getOrElse("")
-    val allCommandParts = Array(gitCommand, "-C", workspace + repo) ++ commandParts
-    Command.run(allCommandParts)
+    val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
+    Command.runArray(gitCommand +: commandParts, inDir = Some(cwd))
   }
 
   def git(command:String, inRepo:Option[String] = None):Future[List[String]]={
-    val repo = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
-    //println(s"$gitCommand -C ${workspace + repo} $command".split(" ").mkString(", "))
-    Command.run(s"$gitCommand $command", inDir = Some(repo))
+    val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
+    Command.run(s"$gitCommand $command", inDir = Some(cwd))
   }
 
   def init(name:String):Future[Unit]={
@@ -82,7 +84,7 @@ class LocalGitStore(workspace:Path) {
     println(s"targetDir = $targetDir")
 
     while(targetDir.toFile.exists()) {
-      println("removing $targetDir")
+      println(s"removing $targetDir")
       FileUtils.deleteDirectory(targetDir.toFile)
     }
 

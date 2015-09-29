@@ -26,17 +26,17 @@ trait FutureValues {
 
   implicit val defaultTimeout = 5 seconds
 
-  implicit def extractAwait[A](future: Future[A]) = awaitResult[A](future)
+  implicit def extractAwait[A](future: Future[A]): A = awaitResult[A](future)
 
   def awaitResult[A](future: Future[A])(implicit timeout: Duration) = Await.result(future, timeout)
 
   implicit class FuturePimp[T](future: Future[T]) {
-    def awaitSuccess = {
+    def awaitSuccess() = {
       Await.result(future, defaultTimeout)
       assert(future.value.get.isSuccess, s"Future was failed, value was ${future.value}")
     }
 
-    def awaitFailure = {
+    def awaitFailure() = {
       Await.result(future, defaultTimeout)
       assert(future.value.get.isFailure, s"Future was success, value was ${future.value}")
     }
@@ -46,7 +46,7 @@ trait FutureValues {
       Await.result(future, defaultTimeout)
     }
 
-    def awaitSuccessOrThrow: Unit = {
+    def awaitSuccessOrThrow(): Unit = {
       future.onComplete {
         case Success(value) => Unit
         case Failure(e) => throw e
