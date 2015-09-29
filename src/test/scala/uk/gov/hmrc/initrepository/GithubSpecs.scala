@@ -134,7 +134,9 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
         willRespondWith = (201, None)
       )
 
-      github.createRepo("domain").awaitSuccessOrThrow
+      val createdUrl = github.createRepo("domain").await
+
+      createdUrl shouldBe "git@github.com:hmrc/domain.git"
 
       assertRequest(
         method = POST,
@@ -157,7 +159,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     "add a repository to a team in" in {
       givenGitHubExpects(
         method = PUT,
-        url = "/teams/99/repos/hmrc/domain",//?permission=push",
+        url = "/teams/99/repos/hmrc/domain?permission=push",
         willRespondWith = (204, None)
       )
 
@@ -166,29 +168,9 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
       assertRequest(
         method = PUT,
-        url = "/teams/99/repos/hmrc/domain",
-//        extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
-        body = None
-      )
-    }
-  }
-
-  "Github.addCollaboratorToRepository" should {
-    "add a repository to a team in" in {
-      givenGitHubExpects(
-        method = PUT,
-        url = "/repos/hmrc/domain/collaborators/aUser?permission=push",
-        willRespondWith = (204, None)
-      )
-
-      printMappings
-      github.addCollaboratorToRepository("aUser", "domain").awaitSuccess
-
-      assertRequest(
-        method = PUT,
-        url = "/repos/hmrc/domain/collaborators/aUser?permission=push",
+        url = "/teams/99/repos/hmrc/domain?permission=push",
         extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
-        body = None
+        body = Some("""{"permission": "push"}""")
       )
     }
   }

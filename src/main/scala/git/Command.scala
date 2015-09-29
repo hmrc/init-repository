@@ -1,0 +1,64 @@
+/*
+ * Copyright 2015 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package git
+
+import java.nio.file.Path
+
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.sys.process.{Process, ProcessLogger}
+
+object Command {
+
+  def run(cmd:String, inDir:Option[Path] = None):Future[List[String]]= {
+    Future {
+      val pb = inDir.fold(Process(cmd)) { path => Process(cmd, cwd = path.toFile) }
+
+      val out = ListBuffer[String]()
+      val err = ListBuffer[String]()
+
+      val logger = ProcessLogger((s) => out.append(s), (e) => err.append(e))
+      val exitCode = pb.!(logger)
+
+      if(exitCode != 0) println(s"got exit code $exitCode from command $cmd")
+      if(err.size > 0)  println(s"got following errors from command $cmd \n  ${err.mkString("\n  ")}")
+
+      println(s"$cmd out = ${out.toList}")
+
+      out.toList
+    }
+  }
+
+  def run(cmd:Array[String]):Future[List[String]]= {
+    Future {
+      val pb = Process(cmd)
+
+      val out = ListBuffer[String]()
+      val err = ListBuffer[String]()
+
+      val logger = ProcessLogger((s) => out.append(s), (e) => err.append(e))
+      val exitCode = pb.!(logger)
+
+      if(exitCode != 0) println(s"got exit code $exitCode from command ${cmd.mkString(" ")}")
+      if(err.size > 0)  println(s"got following errors from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
+
+
+      out.toList
+    }
+  }
+}

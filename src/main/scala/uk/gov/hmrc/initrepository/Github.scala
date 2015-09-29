@@ -17,7 +17,9 @@
 package uk.gov.hmrc.initrepository
 
 import java.net.URL
+import java.nio.file.{Paths, Files}
 
+import git.Command
 import play.api.libs.json._
 import play.api.libs.ws._
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient, NingWSClientConfig}
@@ -34,14 +36,11 @@ class GithubUrls( orgName:String = "hmrc",
   def containsRepo(repo:String) =
     new URL(s"$apiRoot/repos/$orgName/$repo")
 
-  def addCollaboratorToRepo(user:String, repo:String) =
-    new URL(s"$apiRoot/repos/$orgName/$repo/collaborators/$user?permission=push")
-
   def teams =
     new URL(s"$apiRoot/orgs/$orgName/teams")
 
   def addTeamToRepo(repoName:String, teamId:Int) =
-    new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName") //?permission=push
+    new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName?permission=push")
 }
 
 class RequestException(request:WSRequest, response:WSResponse)
@@ -51,16 +50,7 @@ class RequestException(request:WSRequest, response:WSResponse)
 
 class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
 
-  def addCollaboratorToRepository(user: String, repository: String):Future[Unit] = {
-    val req = githubHttp.buildJsonCall("PUT", githubUrls.addCollaboratorToRepo(user, repository))
-      .withHeaders("Accept" -> "application/vnd.github.ironman-preview+json")
-
-
-    req.execute().flatMap { res => res.status match {
-      case 204 => Future.successful()
-      case _   => Future.failed(new RequestException(req, res))
-    }}
-  }
+  val IronManApplication = "application/vnd.github.ironman-preview+json"
 
   def teamId(team: String): Future[Option[Int]]={
     val req = githubHttp.buildJsonCall("GET", githubUrls.teams)
@@ -77,8 +67,9 @@ class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
 
     val req = githubHttp
       .buildJsonCall("PUT", githubUrls.addTeamToRepo(repoName, teamId))
-      //.withHeaders("Accept" -> "application/vnd.github.ironman-preview+json")
-      //.withHeaders("Content-Length" -> "0")
+      .withHeaders("Accept" -> IronManApplication)
+      .withHeaders("Content-Length" -> "0")
+      .withBody("""{"permission": "push"}"""")
 
 
     req.execute().flatMap { res => res.status match {
@@ -104,7 +95,7 @@ class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
     }}
   }
 
-  def createRepo(repoName: String): Future[Unit] = {
+  def createRepo(repoName: String): Future[String] = {
     Log.info(s"creating github repository with name '${repoName}'")
     val payload = s"""{
                     |    "name": "$repoName",
@@ -117,7 +108,7 @@ class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
                     |    "license_template": "apache-2.0"
                     |}""".stripMargin
 
-      githubHttp.postJsonString(githubUrls.createRepo, payload).map { _ => Unit }
+      githubHttp.postJsonString(githubUrls.createRepo, payload).map { _ => s"git@github.com:hmrc/$repoName.git" }
   }
 }
 

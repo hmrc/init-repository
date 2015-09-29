@@ -17,7 +17,10 @@
 package uk.gov.hmrc.initrepository
 
 import java.io.File
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeUnit
+import git.LocalGitStore
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -33,6 +36,9 @@ object Main {
   val githubCredsOpt  = CredentialsFinder.findGithubCredsInFile(new File(githubCredsFile).toPath)
   val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
 
+  if(githubCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Github credentials in ${githubCredsFile}")
+  if(bintrayCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Bintray credentials in ${bintrayCredsFile}")
+
   private val githubHttp: GithubHttp with Object {def creds: ServiceCredentials} = new GithubHttp {
     override def creds: ServiceCredentials = githubCredsOpt.get
 
@@ -41,6 +47,7 @@ object Main {
 
   }
   val github  = new Github(githubHttp, new GithubUrls())
+  val git = new LocalGitStore(Files.createTempDirectory("init-repository-git-store-"))
   
   val HmrcWebOpsUserName = "hmrc-web-operations"
 
@@ -76,12 +83,15 @@ object Main {
       val result: Future[Unit] = preConditions.flatMap { error =>
         if (error.isEmpty) {
           Log.info(s"Pre-conditions met, creating '$newRepoName'")
-          for (_ <- github.createRepo(newRepoName).await;
-               _ <- github.addCollaboratorToRepository(HmrcWebOpsUserName, newRepoName);
+          for (repoUrl <- github.createRepo(newRepoName).await;
                _ <- bintray.createPackage("releases", newRepoName);
-               _ <- bintray.createPackage("release-candidates", newRepoName)
-               //teamIdO <- github.teamId(team);
-               //_ <- addRepoToTeam(newRepoName, teamIdO)
+               _ <- bintray.createPackage("release-candidates", newRepoName);
+               teamIdO <- github.teamId(team);
+               _ <- addRepoToTeam(newRepoName, teamIdO)
+//               _ <- git.cloneRepoURL("git@github.com:hmrc/test-repo-1.git").await;
+//               sha <- git.commitFileToRoot(newRepoName, "README.MD", "Put useful info here").await;
+//               _ <- git.tagCommit(sha)
+//               _ <- git.push(newRepoName).await
           ) yield ()
         } else {
           Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
@@ -89,7 +99,7 @@ object Main {
       }
 
       Await.result(result, Duration(30, TimeUnit.SECONDS))
-      Log.info("complete.")
+      Log.info("init-repository completed.")
 
     } finally {
       bintrayHttp.close()
@@ -108,7 +118,7 @@ object Main {
     for(repoExists  <- github.containsRepo(newRepoName);
         releasesExists  <- bintray.containsPackage("releases", newRepoName);
         releaseCandExists <- bintray.containsPackage("release-candidates", newRepoName);
-        teamExists <- Future.successful(true))//github.teamId(team).map(_.isDefined))
+        teamExists <- github.teamId(team).map(_.isDefined))
       yield{
         if (repoExists)  Some(s"Repository with name '$newRepoName' already exists in github ")
         else if (releasesExists)  Some(s"Package with name '$newRepoName' already exists in bintray releases")
