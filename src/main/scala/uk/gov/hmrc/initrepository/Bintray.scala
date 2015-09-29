@@ -35,7 +35,10 @@ class BintrayUrls(apiRoot:String = "https://bintray.com/api/v1"){
     new URL(s"$apiRoot/packages/hmrc/$repoName")
 }
 
-class Bintray(http:BintrayHttp, urls:BintrayUrls){
+trait Bintray{
+
+  def http:BintrayHttp
+  def urls:BintrayUrls
 
   def createPackage(repoName: String, packageName:String) :Future[Unit]={
     Log.info(s"creating Bintray package with name '${packageName}' in repository '${repoName}'")
@@ -77,6 +80,7 @@ class Bintray(http:BintrayHttp, urls:BintrayUrls){
     }}
   }
 }
+
 
 
 trait BintrayHttp{

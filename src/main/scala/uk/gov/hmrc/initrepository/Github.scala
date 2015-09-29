@@ -48,7 +48,11 @@ class RequestException(request:WSRequest, response:WSResponse)
 
 }
 
-class Github(githubHttp:GithubHttp, githubUrls:GithubUrls){
+trait Github{
+
+  def githubHttp:GithubHttp
+
+  def githubUrls:GithubUrls
 
   val IronManApplication = "application/vnd.github.ironman-preview+json"
 

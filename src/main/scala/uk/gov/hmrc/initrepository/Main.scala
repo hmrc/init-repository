@@ -17,14 +17,13 @@
 package uk.gov.hmrc.initrepository
 
 import java.io.File
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+
 import git.LocalGitStore
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
 
 
 
@@ -39,35 +38,31 @@ object Main {
   if(githubCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Github credentials in ${githubCredsFile}")
   if(bintrayCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Bintray credentials in ${bintrayCredsFile}")
 
-  private val githubHttp: GithubHttp with Object {def creds: ServiceCredentials} = new GithubHttp {
+  private val githubHttp = new GithubHttp {
     override def creds: ServiceCredentials = githubCredsOpt.get
 
     Log.debug(s"github client_id ${creds.user}")
     Log.debug(s"github client_secret ${creds.pass.takeRight(3)}*******")
 
   }
-  val github  = new Github(githubHttp, new GithubUrls())
+
+  val github  = new Github{
+    override def githubHttp: GithubHttp = githubHttp
+    override def githubUrls: GithubUrls =  new GithubUrls()
+  }
   val git = new LocalGitStore(Files.createTempDirectory("init-repository-git-store-"))
   
-  val HmrcWebOpsUserName = "hmrc-web-operations"
-
-  private val bintrayHttp: BintrayHttp with Object {def creds: ServiceCredentials} = new BintrayHttp {
+  private val bintrayHttp = new BintrayHttp {
     override def creds: ServiceCredentials = bintrayCredsOpt.get
 
     Log.debug(s"bintrayCredsOpt client_id ${creds.user}")
     Log.debug(s"bintrayCredsOpt client_secret ${creds.pass.takeRight(3)}*******")
   }
-  val bintray = new Bintray(bintrayHttp, new BintrayUrls())
 
-  implicit class FuturePimp[T](self:Future[T]){
-    def await:Future[T] = {
-      Await.result(self, 30 seconds)
-      self
-    }
+  val bintray = new Bintray{
+    override def http: BintrayHttp = bintrayHttp
+    override def urls: BintrayUrls = new BintrayUrls()
   }
-
-
-  type PreConditionError[T] = Option[T]
 
   def main(args: Array[String]) {
 
@@ -78,25 +73,9 @@ object Main {
     val team = args(1)
 
     try {
-      val preConditions: Future[PreConditionError[String]] = checkPreConditions(newRepoName, team)
 
-      val result: Future[Unit] = preConditions.flatMap { error =>
-        if (error.isEmpty) {
-          Log.info(s"Pre-conditions met, creating '$newRepoName'")
-          for (repoUrl <- github.createRepo(newRepoName).await;
-               _ <- bintray.createPackage("releases", newRepoName);
-               _ <- bintray.createPackage("release-candidates", newRepoName);
-               teamIdO <- github.teamId(team);
-               _ <- addRepoToTeam(newRepoName, teamIdO)
-//               _ <- git.cloneRepoURL("git@github.com:hmrc/test-repo-1.git").await;
-//               sha <- git.commitFileToRoot(newRepoName, "README.MD", "Put useful info here").await;
-//               _ <- git.tagCommit(sha)
-//               _ <- git.push(newRepoName).await
-          ) yield ()
-        } else {
-          Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
-        }
-      }
+      val coord = new Coordinator(github, bintray)
+      val result = coord.run(newRepoName, team)
 
       Await.result(result, Duration(30, TimeUnit.SECONDS))
       Log.info("init-repository completed.")
@@ -107,25 +86,8 @@ object Main {
     }
   }
 
-  def addRepoToTeam(repoName:String, teamIdO:Option[Int]):Future[Unit]={
-    teamIdO.map { teamId =>
-      github.addRepoToTeam(repoName, teamIdO.get)
-    }.getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
-  }
 
-
-  def checkPreConditions(newRepoName:String, team:String):Future[PreConditionError[String]]  ={
-    for(repoExists  <- github.containsRepo(newRepoName);
-        releasesExists  <- bintray.containsPackage("releases", newRepoName);
-        releaseCandExists <- bintray.containsPackage("release-candidates", newRepoName);
-        teamExists <- github.teamId(team).map(_.isDefined))
-      yield{
-        if (repoExists)  Some(s"Repository with name '$newRepoName' already exists in github ")
-        else if (releasesExists)  Some(s"Package with name '$newRepoName' already exists in bintray releases")
-        else if (releaseCandExists) Some(s"Package with name '$newRepoName' already exists in bintray release-candidates")
-        else if (!teamExists) Some(s"Team with name '$team' could not be found in github")
-        else None
-      }
-  }
 
 }
+
+

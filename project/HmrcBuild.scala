@@ -22,7 +22,8 @@ object HmrcBuild extends Build {
     "org.scalatest" %% "scalatest" % "2.2.2" % "test",
     "org.pegdown" % "pegdown" % "1.4.2" % "test",
     "org.mockito" % "mockito-all" % "1.9.5" % "test",
-    "com.github.tomakehurst" % "wiremock" % "1.52" % "test"
+    "com.github.tomakehurst" % "wiremock" % "1.52" % "test",
+    "org.scalamock" %% "scalamock-scalatest-support" % "3.2" % "test"
   )
 
   lazy val InitRepository = Project(appName, file("."))

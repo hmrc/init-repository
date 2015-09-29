@@ -31,8 +31,11 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
-  val githubUrls = new GithubUrls(apiRoot = endpointMockUrl)
-  val github: Github = new Github(new FakeGithubHttp(), githubUrls)
+  val github: Github = new Github{
+    override def githubHttp: GithubHttp = new FakeGithubHttp()
+
+    override def githubUrls: GithubUrls = new GithubUrls(apiRoot = endpointMockUrl)
+  }
 
   "Github.containsRepo" should {
 

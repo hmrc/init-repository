@@ -29,7 +29,10 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
     override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
-  val bintray = new Bintray(new FakeBintrayHttp, new BintrayUrls(apiRoot = endpointMockUrl))
+  val bintray = new Bintray{
+    override def http: BintrayHttp = new FakeBintrayHttp
+    override def urls: BintrayUrls = new BintrayUrls(apiRoot = endpointMockUrl)
+  }
   
   "Bintray.containsPackage" should {
 
