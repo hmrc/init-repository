@@ -18,6 +18,8 @@ package git
 
 import java.nio.file.Path
 
+import uk.gov.hmrc.initrepository.Log
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -35,10 +37,10 @@ object Command {
       val logger = ProcessLogger((s) => out.append(s), (e) => err.append(e))
       val exitCode = pb.!(logger)
 
-      if(exitCode != 0) println(s"got exit code $exitCode from command $cmd")
-      if(err.size > 0)  println(s"got following errors from command $cmd \n  ${err.mkString("\n  ")}")
+      if(exitCode != 0) Log.info(s"got exit code $exitCode from command $cmd")
+      if(err.size > 0)  Log.debug(s"got following output on error stream from command $cmd \n  ${err.mkString("\n  ")}")
 
-      println(s"$cmd out = ${out.toList}")
+      Log.debug(s"output form '$cmd' is ${out.toList.mkString("\n")}")
 
       out.toList
     }
@@ -54,8 +56,8 @@ object Command {
       val logger = ProcessLogger((s) => out.append(s), (e) => err.append(e))
       val exitCode = pb.!(logger)
 
-      if(exitCode != 0) println(s"got exit code $exitCode from command ${cmd.mkString(" ")}")
-      if(err.size > 0)  println(s"got following errors from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
+      if(exitCode != 0) Log.info(s"got exit code $exitCode from command ${cmd.mkString(" ")}")
+      if(err.size > 0)  Log.debug(s"got following output on error stream from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
 
       out.toList
     }

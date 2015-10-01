@@ -20,6 +20,7 @@ import java.io.File
 import java.nio.file.{Paths, Files, Path}
 
 import org.apache.commons.io.FileUtils
+import uk.gov.hmrc.initrepository.Log
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
@@ -37,7 +38,7 @@ class LocalGitStore(workspace:Path) {
   val gitCommand = Await.result(Command.run("which git"), 5.seconds).head.trim
 
   git("--version").map{ _.headOption.getOrElse("<no output from git>")}.foreach { version =>
-    println(s"using git version $version")
+    Log.info(s"using git version $version")
   }
 
   def lastCommitSha(repoName: String):Future[Option[String]]={
@@ -66,21 +67,19 @@ class LocalGitStore(workspace:Path) {
   }
 
   def push(repoName:String): Future[Unit] ={
-    Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map{o => println(o); o}.map { _ => Unit }
+    Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map { _ => Unit }
   }
 
   def pushTags(repoName:String): Future[Unit] ={
-    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map{o => println(o); o}.map { _ => Unit }
+    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map { _ => Unit }
   }
 
   def commitCount(repoName:String):Future[Int]={
-    git("log", inRepo = Some(repoName)).map(_.foreach(println))
     git("rev-list HEAD --count", inRepo = Some(repoName)).map(_.head.trim.toInt)
   }
 
   def gitCommandParts(commandParts:Array[String], inRepo:Option[String] = None):Future[List[String]]={
     val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
-    println(s"commandParts = ${commandParts.mkString(", ")}")
     Command.runArray(gitCommand +: commandParts, inDir = Some(cwd))
   }
 
@@ -98,18 +97,12 @@ class LocalGitStore(workspace:Path) {
     val name = url.split('/').last.stripSuffix(".git")
     val targetDir = workspace.resolve(name)
 
-    println(s"targetDir = $targetDir")
+    Log.info(s"cloning $url into $targetDir")
 
     while(targetDir.toFile.exists()) {
-      println(s"removing $targetDir")
       FileUtils.deleteDirectory(targetDir.toFile)
     }
 
-    val resultF = git(s"clone $url")
-
-    resultF.onComplete {
-      x => println("Completed cloning " + name)
-    }
-    resultF map { _ => Unit }
+    git(s"clone $url") map { _ => Unit }
   }
 }

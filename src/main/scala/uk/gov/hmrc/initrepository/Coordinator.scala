@@ -30,7 +30,6 @@ class Coordinator(github:Github, bintray: Bintray, git:LocalGitService){
   def run(newRepoName:String, team:String):Future[Unit]= {
 
     checkPreConditions(newRepoName, team).flatMap { error =>
-      println(s"error = $error")
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
         for (repoUrl <- github.createRepo(newRepoName).await;
