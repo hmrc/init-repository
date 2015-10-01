@@ -20,7 +20,7 @@ import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
-import git.LocalGitStore
+import git.{LocalGitService, LocalGitStore}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -50,7 +50,7 @@ object Main {
     override def githubHttp: GithubHttp = githubHttp
     override def githubUrls: GithubUrls =  new GithubUrls()
   }
-  val git = new LocalGitStore(Files.createTempDirectory("init-repository-git-store-"))
+  val git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
   
   private val bintrayHttp = new BintrayHttp {
     override def creds: ServiceCredentials = bintrayCredsOpt.get
@@ -74,7 +74,7 @@ object Main {
 
     try {
 
-      val coord = new Coordinator(github, bintray)
+      val coord = new Coordinator(github, bintray, git)
       val result = coord.run(newRepoName, team)
 
       Await.result(result, Duration(30, TimeUnit.SECONDS))
@@ -85,9 +85,6 @@ object Main {
       githubHttp.close()
     }
   }
-
-
-
 }
 
 

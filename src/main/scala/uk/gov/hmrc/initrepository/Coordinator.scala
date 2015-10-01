@@ -1,19 +1,35 @@
+/*
+ * Copyright 2015 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.initrepository
 
+import git.LocalGitService
+
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
+import scala.concurrent.Future
 
+class Coordinator(github:Github, bintray: Bintray, git:LocalGitService){
 
-class Coordinator(github:Github, bintray: Bintray){
+  import ImplicitPimps._
 
   type PreConditionError[T] = Option[T]
 
   def run(newRepoName:String, team:String):Future[Unit]= {
 
-    val preConditions: Future[PreConditionError[String]] = checkPreConditions(newRepoName, team)
-
-    preConditions.flatMap { error =>
+    checkPreConditions(newRepoName, team).flatMap { error =>
       println(s"error = $error")
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
@@ -21,11 +37,8 @@ class Coordinator(github:Github, bintray: Bintray){
              _ <- bintray.createPackage("releases", newRepoName);
              _ <- bintray.createPackage("release-candidates", newRepoName);
              teamIdO <- github.teamId(team);
-             _ <- addRepoToTeam(newRepoName, teamIdO)
-        //               _ <- git.cloneRepoURL("git@github.com:hmrc/test-repo-1.git").await;
-        //               sha <- git.commitFileToRoot(newRepoName, "README.MD", "Put useful info here").await;
-        //               _ <- git.tagCommit(sha)
-        //               _ <- git.push(newRepoName).await
+             _ <- addRepoToTeam(newRepoName, teamIdO);
+             _ <- git.cloneAndTag(repoUrl)
         ) yield ()
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
@@ -54,11 +67,4 @@ class Coordinator(github:Github, bintray: Bintray){
       }
   }
 
-
-  implicit class FuturePimp[T](self:Future[T]){
-    def await:Future[T] = {
-      Await.result(self, 30 seconds)
-      self
-    }
-  }
 }

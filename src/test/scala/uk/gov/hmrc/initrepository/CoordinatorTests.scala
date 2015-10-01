@@ -16,21 +16,16 @@
 
 package uk.gov.hmrc.initrepository
 
-import org.mockito.Matchers._
-import org.mockito.Mockito
+import git.LocalGitService
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import scala.concurrent.ExecutionContext.Implicits.global
-import org.scalamock.scalatest.MockFactory
-import org.scalamock._
-//import org.scalamock.scalatest.
 
 import scala.concurrent.Future
 
 
 class CoordinatorTests extends WordSpec with Matchers with FutureValues with BeforeAndAfterEach with MockitoSugar {
-  
+
   val FutureFalse = Future.successful(false)
   val FutureUnit = Future.successful(Unit)
 
@@ -39,6 +34,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
 
       val github = mock[Github]
       val bintray = mock[Bintray]
+      val git = mock[LocalGitService]
 
       // setup pre-conditions
       when(github.teamId("teamname")) thenReturn Future.successful(Some(1))
@@ -52,7 +48,10 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(bintray.createPackage("release-candidates", "newrepo")) thenReturn Future.successful()
       when(github.addRepoToTeam("newrepo", 1)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray).run("newrepo", "teamname").await
+      // setup git calls
+      when(git.cloneAndTag("repo-url")) thenReturn Future.successful()
+
+      new Coordinator(github, bintray, git).run("newrepo", "teamname").await
 
       // verify pre-conditions
       verify(github).containsRepo("newrepo")
@@ -68,5 +67,5 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
 
     }
   }
-
 }
+

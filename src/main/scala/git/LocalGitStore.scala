@@ -41,6 +41,19 @@ class LocalGitStore(workspace:Path) {
     println(s"using git version $version")
   }
 
+  def lastCommitSha(repoName: String):Future[Option[String]]={
+    git("rev-parse HEAD", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
+  }
+
+  def lastTag(repoName: String):Future[Option[String]]={
+    git("describe --abbrev=0", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
+  }
+
+  def tagAnnotatedCommit(repoName: String, sha: String, tag:String, version:String):Future[Unit] = {
+    val versionWithPrefix = "v" + version.stripPrefix("v")
+    gitCommandParts(Array("tag", "-a", "-m", "Bootstrap tag",  versionWithPrefix), inRepo = Some(repoName)).map { _ => Unit }
+  }
+
   def commitFileToRoot(repoName: String, fileName:String, fileContent: String): Future[Unit]= {
     val target: Path = workspace.resolve(repoName).resolve(fileName)
     if (!target.toFile.exists()) {
@@ -58,6 +71,10 @@ class LocalGitStore(workspace:Path) {
     Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map{o => println(o); o}.map { _ => Unit }
   }
 
+  def pushTags(repoName:String): Future[Unit] ={
+    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map{o => println(o); o}.map { _ => Unit }
+  }
+
   def commitCount(repoName:String):Future[Int]={
     git("log", inRepo = Some(repoName)).map(_.foreach(println))
     git("rev-list HEAD --count", inRepo = Some(repoName)).map(_.head.trim.toInt)
@@ -65,6 +82,7 @@ class LocalGitStore(workspace:Path) {
 
   def gitCommandParts(commandParts:Array[String], inRepo:Option[String] = None):Future[List[String]]={
     val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
+    println(s"commandParts = ${commandParts.mkString(", ")}")
     Command.runArray(gitCommand +: commandParts, inDir = Some(cwd))
   }
 

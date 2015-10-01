@@ -57,7 +57,6 @@ object Command {
       if(exitCode != 0) println(s"got exit code $exitCode from command ${cmd.mkString(" ")}")
       if(err.size > 0)  println(s"got following errors from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
 
-
       out.toList
     }
   }
