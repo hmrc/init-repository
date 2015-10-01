@@ -32,7 +32,6 @@ object Git{
 
 class LocalGitStore(workspace:Path) {
 
-
   val orgName = "HMRC"
 
   val gitCommand = Await.result(Command.run("which git"), 5.seconds).head.trim
@@ -60,10 +59,9 @@ class LocalGitStore(workspace:Path) {
       target.toFile.createNewFile()
     }
 
-    println(s"writing to target = $target")
     Files.write(target, fileContent.getBytes("UTF-8"))
     git(s"add .", inRepo = Some(repoName)).flatMap { r =>
-      gitCommandParts(Array("commit", "-minitial"), inRepo = Some(repoName)).map { _ => Unit }
+      gitCommandParts(Array("commit", s"""-madding $fileName"""), inRepo = Some(repoName)).map { _ => Unit }
     }
   }
 
@@ -91,8 +89,9 @@ class LocalGitStore(workspace:Path) {
     Command.run(s"$gitCommand $command", inDir = Some(cwd))
   }
 
-  def init(name:String):Future[Unit]={
-    git(s"init $name").map { _ => Unit }
+  def init(name:String, isBare:Boolean = false):Future[Unit]={
+    val bareFlag = if(isBare) "--bare " else ""
+    git(s"init $bareFlag$name").map { _ => Unit }
   }
 
   def cloneRepoURL(url: String): Future[Unit] = {

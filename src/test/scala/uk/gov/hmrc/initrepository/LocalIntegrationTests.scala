@@ -19,13 +19,14 @@ package uk.gov.hmrc.initrepository
 import java.nio.file.{Path, Files}
 
 import git.{LocalGitService, LocalGitStore}
+import org.apache.commons.io.FileUtils
 import org.scalatest.{Matchers, OptionValues, WordSpec}
 
 import scala.concurrent.Future
 
 class LocalIntegrationTests extends WordSpec with Matchers with FutureValues with OptionValues{
 
-  val originGitStoreDir = Files.createTempDirectory("local-origin-git-store-")
+  val bareOriginGitStoreDir = Files.createTempDirectory("local-origin-git-store-")
 
   "Coordinator.run" should {
     "result in a tag being pushed to a local git repository" in {
@@ -36,7 +37,7 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
         override def githubUrls: GithubUrls = ???
 
-        override def createRepo(repoName: String): Future[String] = Future.successful(s"${originGitStoreDir.toString}/$repoName")
+        override def createRepo(repoName: String): Future[String] = Future.successful(s"${bareOriginGitStoreDir.toString}/$repoName")
 
         override def containsRepo(repoName: String): Future[Boolean] = Future.successful(false)
 
@@ -64,16 +65,32 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
       val newRepoName = "test-repos"
 
-      val testOriginGitStore = new LocalGitStore(originGitStoreDir)
-
-      testOriginGitStore.init(newRepoName).await
-      testOriginGitStore.commitFileToRoot(newRepoName, "LICENCE", "the licence").await
-
+      val origin = createOriginWithOneCommit(newRepoName)
 
       val coord = new Coordinator(github, bintray, git)
       coord.run(newRepoName, team = "un-used-in-this").await
 
-      testOriginGitStore.lastTag(newRepoName).await.value shouldBe "v0.1.0"
+      origin.lastTag(newRepoName).await.value shouldBe "v0.1.0"
+    }
+
+    def createOriginWithOneCommit(newRepoName:String) = {
+      val bareOriginGitStore = new LocalGitStore(bareOriginGitStoreDir)
+      bareOriginGitStore.init(newRepoName, isBare = true).await
+      createACommit(bareOriginGitStoreDir.resolve(newRepoName).toString, newRepoName)
+      bareOriginGitStore
+    }
+
+
+    def createACommit(bareRepoUrl:String, newRepoName:String): Unit ={
+      val gitStore = Files.createTempDirectory("temporary-git-dir")
+      val git = new LocalGitStore(gitStore)
+
+      git.cloneRepoURL(bareRepoUrl).await
+      git.commitFileToRoot(newRepoName, "LICENCE", "the licence").await
+      git.push(newRepoName).await
+
+      FileUtils.deleteDirectory(gitStore.toFile)
+
     }
   }
 }

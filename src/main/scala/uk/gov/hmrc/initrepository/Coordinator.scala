@@ -38,7 +38,7 @@ class Coordinator(github:Github, bintray: Bintray, git:LocalGitService){
              _ <- bintray.createPackage("release-candidates", newRepoName);
              teamIdO <- github.teamId(team);
              _ <- addRepoToTeam(newRepoName, teamIdO);
-             _ <- git.cloneAndTag(repoUrl)
+             _ <- git.initialiseRepository(repoUrl)
         ) yield ()
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))

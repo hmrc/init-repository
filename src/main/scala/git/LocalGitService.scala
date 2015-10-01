@@ -25,11 +25,67 @@ class LocalGitService(git: LocalGitStore) {
   val BootstrapTagComment = "Bootstrap tag"
   val BootstrapTagVersion = "v0.1.0"
 
-  def cloneAndTag(repoUrl: String) : Future[Unit]={
+  val TravisScalaVersion = "2.11.6"
+  val TravisJdkVersion = "oraclejdk8"
+  val TravisEmail = "platform-engineering@digital.hmrc.gov.uk"
+
+  def buildReadmeTemplate(repoName:String):String={
+    s"""
+      |$repoName
+      |====
+      |
+      |[![Build Status](https://travis-ci.org/hmrc/$repoName.svg?branch=master)](https://travis-ci.org/hmrc/$repoName) [ ![Download](https://api.bintray.com/packages/hmrc/releases/$repoName/images/download.svg) ](https://bintray.com/hmrc/releases/$repoName/_latestVersion)
+    """.stripMargin
+  }
+
+  def buildTravisYamlTemplate(repoName:String):String={
+    s"""
+      |sudo: false
+      |language: scala
+      |scala:
+      |- $TravisScalaVersion
+      |jdk:
+      |- $TravisJdkVersion
+      |cache:
+      |  directories:
+      |    - '$$HOME/.ivy2/cache'
+      |notifications:
+      |  email:
+      |    recipients:
+      |    - $TravisEmail
+    """.stripMargin
+  }
+
+  val gitIgnoreContents = {
+    """
+      |logs
+      |project/project
+      |project/target
+      |target
+      |lib_managed
+      |tmp
+      |.history
+      |dist
+      |/.idea
+      |/*.iml
+      |/out
+      |/.idea_modules
+      |/.classpath
+      |/.project
+      |/RUNNING_PID
+      |/.settings
+      |*.iws
+      |
+    """.stripMargin
+  }
+
+  def initialiseRepository(repoUrl: String) : Future[Unit]={
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for(
       _ <- git.cloneRepoURL(repoUrl).await;
-      //sha <- git.commitFileToRoot(newRepoName, "README.MD", "Put useful info here").await;
+      _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName)).await;
+      _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents).await;
+      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName)).await;
       shaO <- git.lastCommitSha(newRepoName);
       _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion).await;
       _ <- git.push(newRepoName).await;
