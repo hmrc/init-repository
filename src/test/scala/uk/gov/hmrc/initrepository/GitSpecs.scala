@@ -52,8 +52,7 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
 
   "Git.lastCommitSha" should {
     "get last commit sha " in {
-      git.init("test-repo").await
-      git.commitFileToRoot("test-repo", "README.MD", fileContent = "Some useful info.").await
+      repoWithOneCommit("test-repo", "README.md")
 
       git.commitCount("test-repo").await shouldBe 1
       git.lastCommitSha("test-repo").await.value.length() shouldBe 40
@@ -62,8 +61,7 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
 
   "Git.tagCommit" should {
     "tag a given commit" in {
-      git.init("test-repo").await
-      git.commitFileToRoot("test-repo", "README.MD", fileContent = "Some useful info.").await
+      repoWithOneCommit("test-repo", "README.md")
 
       val lastCommit = git.lastCommitSha("test-repo").await.value
 
@@ -72,8 +70,7 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
     }
 
     "tag a given commit with a leading 'v' in the version number if it is missed off" in {
-      git.init("test-repo").await
-      git.commitFileToRoot("test-repo", "README.MD", fileContent = "Some useful info.").await
+      repoWithOneCommit("test-repo", "README.md")
 
       val lastCommit = git.lastCommitSha("test-repo").await.value
 
@@ -82,14 +79,25 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
     }
   }
 
+  def repoWithOneCommit(name:String, fileName:String): Unit ={
+    git.init(name).await
+    git.commitFileToRoot(name, "README.md", fileContent = "Some useful info.", "user", "email").await
+  }
+
   "Git.commitFileToRoot" should {
 
-    "commit a file with given contents to the repository root when the file doesn't exist" in {
+    "commit a file with given contents to the repository root when the file doesn't exist with a given username" in {
       git.init("test-repo").await
-      git.commitFileToRoot("test-repo", "README.MD", fileContent = "Some useful info.").await
+      git.commitFileToRoot(
+        "test-repo",
+        "README.md",
+        fileContent = "Some useful info.",
+        user = "hmrc-web-operations",
+        email = "hmrc-web-operations@digital.hmrc.gov.uk").await
 
       git.commitCount("test-repo").await shouldBe 1
-      Files.readAllLines(tempDir.resolve("test-repo").resolve("README.MD")).head.trim shouldBe "Some useful info."
+      git.lastCommitUser("test-repo").await.value shouldBe "hmrc-web-operations"
+      Files.readAllLines(tempDir.resolve("test-repo").resolve("README.md")).head.trim shouldBe "Some useful info."
     }
   }
 }

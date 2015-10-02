@@ -45,6 +45,10 @@ class LocalGitStore(workspace:Path) {
     git("rev-parse HEAD", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
   }
 
+  def lastCommitUser(repoName: String):Future[Option[String]]={
+    git("log --pretty=format:%an", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
+  }
+
   def lastTag(repoName: String):Future[Option[String]]={
     git("describe --abbrev=0", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
   }
@@ -54,15 +58,21 @@ class LocalGitStore(workspace:Path) {
     gitCommandParts(Array("tag", "-a", "-m", "Bootstrap tag",  versionWithPrefix), inRepo = Some(repoName)).map { _ => Unit }
   }
 
-  def commitFileToRoot(repoName: String, fileName:String, fileContent: String): Future[Unit]= {
+  def commitFileToRoot(repoName: String, fileName:String, fileContent: String, user:String, email:String): Future[Unit]= {
     val target: Path = workspace.resolve(repoName).resolve(fileName)
     if (!target.toFile.exists()) {
       target.toFile.createNewFile()
     }
 
     Files.write(target, fileContent.getBytes("UTF-8"))
+
     git(s"add .", inRepo = Some(repoName)).flatMap { r =>
-      gitCommandParts(Array("commit", s"""-madding $fileName"""), inRepo = Some(repoName)).map { _ => Unit }
+      gitCommandParts(Array(
+        "-c", s"user.email=$email",
+        "-c", s"user.name=$user",
+        "commit",
+        s"""-madding $fileName"""
+      ), inRepo = Some(repoName)).map { _ => Unit }
     }
   }
 

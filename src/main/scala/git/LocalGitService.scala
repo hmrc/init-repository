@@ -27,7 +27,10 @@ class LocalGitService(git: LocalGitStore) {
 
   val TravisScalaVersion = "2.11.6"
   val TravisJdkVersion = "oraclejdk8"
-  val TravisEmail = "platform-engineering@digital.hmrc.gov.uk"
+  val TravisEmail = "hmrc-web-operations@digital.hmrc.gov.uk"
+
+  val CommitUserName = "hmrc-web-operations"
+  val CommitUserEmail = "hmrc-web-operations@digital.hmrc.gov.uk"
 
   def buildReadmeTemplate(repoName:String):String={
     s"""
@@ -83,9 +86,9 @@ class LocalGitService(git: LocalGitStore) {
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for(
       _ <- git.cloneRepoURL(repoUrl).await;
-      _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName)).await;
-      _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents).await;
-      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName)).await;
+      _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail).await;
+      _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail).await;
+      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName), CommitUserName, CommitUserEmail).await;
       shaO <- git.lastCommitSha(newRepoName);
       _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion).await;
       _ <- git.push(newRepoName).await;

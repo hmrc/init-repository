@@ -38,8 +38,8 @@ object Main {
   if(githubCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Github credentials in ${githubCredsFile}")
   if(bintrayCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Bintray credentials in ${bintrayCredsFile}")
 
-  private val githubHttp = new GithubHttp {
-    override def creds: ServiceCredentials = githubCredsOpt.get
+  private val githubHttpImpl = new GithubHttp {
+    override val creds: ServiceCredentials = githubCredsOpt.get
 
     Log.debug(s"github client_id ${creds.user}")
     Log.debug(s"github client_secret ${creds.pass.takeRight(3)}*******")
@@ -47,21 +47,21 @@ object Main {
   }
 
   val github  = new Github{
-    override def githubHttp: GithubHttp = githubHttp
-    override def githubUrls: GithubUrls =  new GithubUrls()
+    override val githubHttp: GithubHttp = githubHttpImpl
+    override val githubUrls: GithubUrls =  new GithubUrls()
   }
   val git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
-  
-  private val bintrayHttp = new BintrayHttp {
-    override def creds: ServiceCredentials = bintrayCredsOpt.get
+
+  private val bintrayHttpImpl = new BintrayHttp {
+    override val creds: ServiceCredentials = bintrayCredsOpt.get
 
     Log.debug(s"bintrayCredsOpt client_id ${creds.user}")
     Log.debug(s"bintrayCredsOpt client_secret ${creds.pass.takeRight(3)}*******")
   }
 
   val bintray = new Bintray{
-    override def http: BintrayHttp = bintrayHttp
-    override def urls: BintrayUrls = new BintrayUrls()
+    override val http: BintrayHttp = bintrayHttpImpl
+    override val urls: BintrayUrls = new BintrayUrls()
   }
 
   def main(args: Array[String]) {
@@ -81,8 +81,8 @@ object Main {
       Log.info("init-repository completed.")
 
     } finally {
-      bintrayHttp.close()
-      githubHttp.close()
+      bintrayHttpImpl.close()
+      githubHttpImpl.close()
     }
   }
 }

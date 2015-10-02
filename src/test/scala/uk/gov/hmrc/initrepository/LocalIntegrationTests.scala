@@ -86,7 +86,7 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       val git = new LocalGitStore(gitStore)
 
       git.cloneRepoURL(bareRepoUrl).await
-      git.commitFileToRoot(newRepoName, "LICENCE", "the licence").await
+      git.commitFileToRoot(newRepoName, "LICENCE", "the licence", "hmrc-web-operations", "e@ma.il").await
       git.push(newRepoName).await
 
       FileUtils.deleteDirectory(gitStore.toFile)
