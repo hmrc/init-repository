@@ -104,8 +104,8 @@ trait Github{
     Log.info(s"creating github repository with name '${repoName}'")
     val payload = s"""{
                     |    "name": "$repoName",
-                    |    "description": "$repoName",
-                    |    "homepage": "https://github.com",
+                    |    "description": "",
+                    |    "homepage": "",
                     |    "private": false,
                     |    "has_issues": true,
                     |    "has_wiki": true,

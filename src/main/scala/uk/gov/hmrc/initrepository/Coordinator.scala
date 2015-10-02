@@ -38,10 +38,13 @@ class Coordinator(github:Github, bintray: Bintray, git:LocalGitService){
              teamIdO <- github.teamId(team);
              _ <- addRepoToTeam(newRepoName, teamIdO);
              _ <- git.initialiseRepository(repoUrl)
-        ) yield ()
+        ) yield repoUrl
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
       }
+    }.map { repoUrl =>
+      val repoWebUrl = "https://github.com/hmrc/" + newRepoName
+      Log.info(s"Successfully created $repoWebUrl")
     }
   }
 

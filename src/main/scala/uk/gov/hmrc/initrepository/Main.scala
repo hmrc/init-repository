@@ -78,7 +78,6 @@ object Main {
       val result = coord.run(newRepoName, team)
 
       Await.result(result, Duration(30, TimeUnit.SECONDS))
-      Log.info("init-repository completed.")
 
     } finally {
       bintrayHttpImpl.close()

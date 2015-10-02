@@ -146,8 +146,8 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
         url = "/orgs/hmrc/repos",
         body = Some("""{
                       |    "name": "domain",
-                      |    "description": "domain",
-                      |    "homepage": "https://github.com",
+                      |    "description": "",
+                      |    "homepage": "",
                       |    "private": false,
                       |    "has_issues": true,
                       |    "has_wiki": true,
