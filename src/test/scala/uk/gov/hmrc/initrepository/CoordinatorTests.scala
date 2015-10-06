@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.initrepository
 
-import git.LocalGitService
+import uk.gov.hmrc.initrepository.git.LocalGitService
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}

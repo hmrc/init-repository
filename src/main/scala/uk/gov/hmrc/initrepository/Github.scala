@@ -19,7 +19,7 @@ package uk.gov.hmrc.initrepository
 import java.net.URL
 import java.nio.file.{Paths, Files}
 
-import git.Command
+import uk.gov.hmrc.initrepository.git.Command
 import play.api.libs.json._
 import play.api.libs.ws._
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient, NingWSClientConfig}

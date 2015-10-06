@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.initrepository
 
-import git.LocalGitService
+import uk.gov.hmrc.initrepository.git.LocalGitService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

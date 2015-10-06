@@ -20,7 +20,7 @@ import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
-import git.{LocalGitService, LocalGitStore}
+import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

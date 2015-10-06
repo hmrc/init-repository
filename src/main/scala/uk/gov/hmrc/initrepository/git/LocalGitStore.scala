@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package git
+package uk.gov.hmrc.initrepository.git
 
 import java.io.File
 import java.nio.file.{Paths, Files, Path}

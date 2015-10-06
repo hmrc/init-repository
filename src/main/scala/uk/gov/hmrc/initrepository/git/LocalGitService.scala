@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package git
+package uk.gov.hmrc.initrepository.git
 
 import scala.concurrent.Future
 import uk.gov.hmrc.initrepository.ImplicitPimps._

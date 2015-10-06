@@ -18,7 +18,7 @@ package uk.gov.hmrc.initrepository
 
 import java.nio.file.{Path, Files}
 
-import git.{LocalGitService, LocalGitStore}
+import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 import org.apache.commons.io.FileUtils
 import org.scalatest.{Matchers, OptionValues, WordSpec}
 
