@@ -27,17 +27,21 @@ class LocalGitService(git: LocalGitStore) {
 
   val TravisScalaVersion = "2.11.6"
   val TravisJdkVersion = "oraclejdk8"
-  val TravisEmail = "hmrc-web-operations@digital.hmrc.gov.uk"
 
   val CommitUserName = "hmrc-web-operations"
   val CommitUserEmail = "hmrc-web-operations@digital.hmrc.gov.uk"
 
   def buildReadmeTemplate(repoName:String):String={
     s"""
-      |$repoName
-      |====
+      |# $repoName
       |
       |[![Build Status](https://travis-ci.org/hmrc/$repoName.svg?branch=master)](https://travis-ci.org/hmrc/$repoName) [ ![Download](https://api.bintray.com/packages/hmrc/releases/$repoName/images/download.svg) ](https://bintray.com/hmrc/releases/$repoName/_latestVersion)
+      |
+      |This is a placeholder README.md for a new repository
+      |
+      |### License
+      |
+      |This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
     """.stripMargin
   }
 
@@ -52,10 +56,6 @@ class LocalGitService(git: LocalGitStore) {
       |cache:
       |  directories:
       |    - '$$HOME/.ivy2/cache'
-      |notifications:
-      |  email:
-      |    recipients:
-      |    - $TravisEmail
     """.stripMargin
   }
 
@@ -71,6 +71,7 @@ class LocalGitService(git: LocalGitStore) {
       |dist
       |/.idea
       |/*.iml
+      |/*.ipr
       |/out
       |/.idea_modules
       |/.classpath
