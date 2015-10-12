@@ -21,7 +21,7 @@ import uk.gov.hmrc.initrepository.git.LocalGitService
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class Coordinator(github:Github, bintray: Bintray, git:LocalGitService){
+class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
 
   import ImplicitPimps._
 
@@ -33,8 +33,7 @@ class Coordinator(github:Github, bintray: Bintray, git:LocalGitService){
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
         for (repoUrl <- github.createRepo(newRepoName).await;
-             _ <- bintray.createPackage("releases", newRepoName);
-             _ <- bintray.createPackage("release-candidates", newRepoName);
+             _ <- bintray.createPackagesFor(newRepoName);
              teamIdO <- github.teamId(team);
              _ <- addRepoToTeam(newRepoName, teamIdO);
              _ <- git.initialiseRepository(repoUrl)
@@ -57,13 +56,11 @@ class Coordinator(github:Github, bintray: Bintray, git:LocalGitService){
 
   def checkPreConditions(newRepoName:String, team:String):Future[PreConditionError[String]]  ={
     for(repoExists  <- github.containsRepo(newRepoName);
-        releasesExists  <- bintray.containsPackage("releases", newRepoName);
-        releaseCandExists <- bintray.containsPackage("release-candidates", newRepoName);
+        existingPackages <- bintray.reposContainingPackage(newRepoName);
         teamExists <- github.teamId(team).map(_.isDefined))
       yield{
         if (repoExists)  Some(s"Repository with name '$newRepoName' already exists in github ")
-        else if (releasesExists)  Some(s"Package with name '$newRepoName' already exists in bintray releases")
-        else if (releaseCandExists) Some(s"Package with name '$newRepoName' already exists in bintray release-candidates")
+        else if (existingPackages.nonEmpty)  Some(s"The following bintray packages already exist: '${existingPackages.mkString(",")}'")
         else if (!teamExists) Some(s"Team with name '$team' could not be found in github")
         else None
       }

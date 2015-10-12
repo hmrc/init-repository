@@ -33,19 +33,17 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
     "run operations in order when calls are successful" in {
 
       val github = mock[Github]
-      val bintray = mock[Bintray]
+      val bintray = mock[BintrayService]
       val git = mock[LocalGitService]
 
       // setup pre-conditions
       when(github.teamId("teamname")) thenReturn Future.successful(Some(1))
       when(github.containsRepo("newrepo")) thenReturn FutureFalse
-      when(bintray.containsPackage("releases", "newrepo")) thenReturn FutureFalse
-      when(bintray.containsPackage("release-candidates", "newrepo")) thenReturn FutureFalse
+      when(bintray.reposContainingPackage("newrepo")) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
       when(github.createRepo("newrepo")) thenReturn Future.successful("repo-url")
-      when(bintray.createPackage("releases", "newrepo")) thenReturn Future.successful()
-      when(bintray.createPackage("release-candidates", "newrepo")) thenReturn Future.successful()
+      when(bintray.createPackagesFor("newrepo")) thenReturn Future.successful()
       when(github.addRepoToTeam("newrepo", 1)) thenReturn Future.successful()
 
       // setup git calls
@@ -56,13 +54,11 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       // verify pre-conditions
       verify(github).containsRepo("newrepo")
       verify(github, atLeastOnce()).teamId("teamname")
-      verify(bintray).containsPackage("releases", "newrepo")
-      verify(bintray).containsPackage("release-candidates", "newrepo")
+      verify(bintray).reposContainingPackage("newrepo")
 
       // verify repo creation calls
       verify(github).createRepo("newrepo")
-      verify(bintray).createPackage("releases", "newrepo")
-      verify(bintray).createPackage("release-candidates", "newrepo")
+      when(bintray.createPackagesFor("newrepo")) thenReturn Future.successful()
       verify(github).addRepoToTeam("newrepo", 1)
 
     }

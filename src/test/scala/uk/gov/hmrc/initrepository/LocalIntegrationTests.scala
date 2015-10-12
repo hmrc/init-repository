@@ -46,15 +46,13 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
         override def addRepoToTeam(repoName: String, teamId: Int): Future[Unit] = Future.successful(Unit)
       }
 
-      val bintray = new Bintray {
+      val bintray = new BintrayService {
 
-        override def urls: BintrayUrls = ???
+        override def bintray: Bintray = ???
 
-        override def http: BintrayHttp = ???
+        override def createPackagesFor(newRepository:String):Future[Unit] = Future.successful(Unit)
 
-        override def containsPackage(repoName: String, packageName: String): Future[Boolean] = Future.successful(false)
-
-        override def createPackage(repoName: String, packageName: String): Future[Unit] = Future.successful(Unit)
+        override def reposContainingPackage(newRepository:String):Future[Set[String]] = Future.successful(Set())
       }
 
       val git = {

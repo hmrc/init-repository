@@ -59,9 +59,11 @@ object Main {
     Log.debug(s"bintrayCredsOpt client_secret ${creds.pass.takeRight(3)}*******")
   }
 
-  val bintray = new Bintray{
-    override val http: BintrayHttp = bintrayHttpImpl
-    override val urls: BintrayUrls = new BintrayUrls()
+  val bintrayService = new BintrayService {
+    override def bintray = new Bintray {
+      override val http: BintrayHttp = bintrayHttpImpl
+      override val urls: BintrayUrls = new BintrayUrls()
+    }
   }
 
   def main(args: Array[String]) {
@@ -74,7 +76,7 @@ object Main {
 
     try {
 
-      val coord = new Coordinator(github, bintray, git)
+      val coord = new Coordinator(github, bintrayService, git)
       val result = coord.run(newRepoName, team)
 
       Await.result(result, Duration(30, TimeUnit.SECONDS))
