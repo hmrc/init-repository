@@ -90,7 +90,6 @@ trait Github{
 
 
   def containsRepo(repoName: String): Future[Boolean] = {
-    println(s" githubUrls.containsRepo(repoName) =  ${githubUrls.containsRepo(repoName)}")
     val req = githubHttp.buildJsonCall("GET", githubUrls.containsRepo(repoName))
 
     req.execute().flatMap { res => res.status match {
@@ -115,6 +114,8 @@ trait Github{
 
       githubHttp.postJsonString(githubUrls.createRepo, payload).map { _ => s"git@github.com:hmrc/$repoName.git" }
   }
+
+  def close() = githubHttp.close()
 }
 
 case class SimpleResponse(status:Int, rawBody:String)

@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.initrepository
+package uk.gov.hmrc.initrepository.bintray
 
 import java.net.URL
 
-import play.api.Logger
-import play.api.libs.json.JsValue
 import play.api.libs.ws._
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient}
+import uk.gov.hmrc.initrepository.{ServiceCredentials, Log, RequestException}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -79,6 +78,8 @@ trait Bintray{
       case _   => Future.failed(new RequestException(req, res))
     }}
   }
+
+  def close() = http.close()
 }
 
 
@@ -103,4 +104,11 @@ trait BintrayHttp{
       req.withBody(b)
     }.getOrElse(req)
   }
+
+
+  Runtime.getRuntime.addShutdownHook(new Thread {
+    override def run(): Unit = {
+      ws.close()
+    }
+  })
 }

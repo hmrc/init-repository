@@ -18,6 +18,7 @@ package uk.gov.hmrc.initrepository
 
 import java.nio.file.{Path, Files}
 
+import uk.gov.hmrc.initrepository.bintray.{Bintray, BintrayService}
 import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 import org.apache.commons.io.FileUtils
 import org.scalatest.{Matchers, OptionValues, WordSpec}
@@ -48,11 +49,13 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
       val bintray = new BintrayService {
 
+        override def createPackagesFor(newPackageName:String):Future[Unit]= Future.successful(true)
+
+        override def reposContainingPackage(newPackageName:String):Future[Set[String]]=Future.successful(Set())
+
+        override lazy val repositories: Set[String] = ???
+
         override def bintray: Bintray = ???
-
-        override def createPackagesFor(newRepository:String):Future[Unit] = Future.successful(Unit)
-
-        override def reposContainingPackage(newRepository:String):Future[Set[String]] = Future.successful(Set())
       }
 
       val git = {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.initrepository
+package uk.gov.hmrc.initrepository.bintray
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -22,19 +22,26 @@ import scala.concurrent.Future
 trait BintrayService {
 
   def bintray:Bintray
-  val repositories:Set[String] = Set("releases", "release-candidates")
+  val repositories:Set[String]
 
-  def createPackagesFor(newRepository:String):Future[Unit]={
-    ???
-  }
 
-  def reposContainingPackage(newRepository:String):Future[Set[String]]={
+  def createPackagesFor(newPackageName:String):Future[Unit]={
     Future.sequence {
       repositories.map { r =>
-        bintray.containsPackage(r, newRepository).map { resp => r -> resp}
+        bintray.createPackage(r, newPackageName)
+      }
+    }.map(_.head)
+  }
+
+  def reposContainingPackage(newPackageName:String):Future[Set[String]]={
+    Future.sequence {
+      repositories.map { r =>
+        bintray.containsPackage(r, newPackageName).map { resp => r -> resp}
       }
     }.map { repoResponses =>
       repoResponses.filter(_._2).map(_._1)
     }
   }
+
+  def close() = bintray.close()
 }

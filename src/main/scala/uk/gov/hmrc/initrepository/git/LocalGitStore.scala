@@ -16,15 +16,14 @@
 
 package uk.gov.hmrc.initrepository.git
 
-import java.io.File
-import java.nio.file.{Paths, Files, Path}
+import java.nio.file.{Files, Path}
 
 import org.apache.commons.io.FileUtils
 import uk.gov.hmrc.initrepository.Log
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 object Git{
   def sshUrl(name:String, orgName:String) = s"git@github.com:$orgName/$name.git".toLowerCase
@@ -38,7 +37,7 @@ class LocalGitStore(workspace:Path) {
   val gitCommand = Await.result(Command.run("which git"), 5.seconds).head.trim
 
   git("--version").map{ _.headOption.getOrElse("<no output from git>")}.foreach { version =>
-    Log.info(s"using git version $version")
+    Log.info(s"using git CLI version $version")
   }
 
   def lastCommitSha(repoName: String):Future[Option[String]]={

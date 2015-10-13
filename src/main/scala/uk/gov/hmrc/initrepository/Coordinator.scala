@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.initrepository
 
+import uk.gov.hmrc.initrepository.bintray.BintrayService
 import uk.gov.hmrc.initrepository.git.LocalGitService
 
 import scala.concurrent.ExecutionContext.Implicits.global

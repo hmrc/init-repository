@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.initrepository
 
+import uk.gov.hmrc.initrepository.bintray.BintrayService
 import uk.gov.hmrc.initrepository.git.LocalGitService
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
@@ -58,7 +59,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
 
       // verify repo creation calls
       verify(github).createRepo("newrepo")
-      when(bintray.createPackagesFor("newrepo")) thenReturn Future.successful()
+      verify(bintray).createPackagesFor("newrepo")
       verify(github).addRepoToTeam("newrepo", 1)
 
     }

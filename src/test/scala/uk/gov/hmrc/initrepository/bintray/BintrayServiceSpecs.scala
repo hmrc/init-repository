@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.initrepository
+package uk.gov.hmrc.initrepository.bintray
 
-import org.mockito.Mock
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import uk.gov.hmrc.initrepository.{FutureValues, WireMockEndpoints}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -36,7 +37,8 @@ class BintrayServiceSpecs extends WordSpec with Matchers with FutureValues with 
       when(mockBintray.containsPackage("release-candidates", "newRepo")) thenReturn Future(false)
 
       val bintrayService = new BintrayService{
-        override def bintray: Bintray = mockBintray
+        override val bintray: Bintray = mockBintray
+        override val repositories = BintrayConfig.sbtStandardBintrayRepos
       }
 
       bintrayService.reposContainingPackage("newRepo").await shouldBe Set.empty[String]
@@ -46,14 +48,33 @@ class BintrayServiceSpecs extends WordSpec with Matchers with FutureValues with 
 
       val mockBintray = mock[Bintray]
 
-      when(mockBintray.containsPackage("releases", "newRepo")) thenReturn Future(true)
-      when(mockBintray.containsPackage("release-candidates", "newRepo")) thenReturn Future(true)
+      when(mockBintray.containsPackage("releases", "newRepo")) thenReturn Future.successful(true)
+      when(mockBintray.containsPackage("release-candidates", "newRepo")) thenReturn Future.successful(true)
 
       val bintrayService = new BintrayService{
-        override def bintray: Bintray = mockBintray
+        override val bintray: Bintray = mockBintray
+        override val repositories = BintrayConfig.sbtStandardBintrayRepos
       }
 
       bintrayService.reposContainingPackage("newRepo").await shouldBe Set("releases", "release-candidates")
+    }
+
+    "create a package" in {
+
+      val mockBintray = mock[Bintray]
+
+      when(mockBintray.createPackage("releases", "newRepo")) thenReturn Future.successful()
+      when(mockBintray.createPackage("release-candidates", "newRepo")) thenReturn Future.successful()
+
+      val bintrayService = new BintrayService{
+        override val bintray: Bintray = mockBintray
+        override val repositories = BintrayConfig.sbtStandardBintrayRepos
+      }
+
+      bintrayService.createPackagesFor("newRepo").await
+
+      verify(mockBintray).createPackage("releases", "newRepo")
+      verify(mockBintray).createPackage("release-candidates", "newRepo")
     }
   }
 }

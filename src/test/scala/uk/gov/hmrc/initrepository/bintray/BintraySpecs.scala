@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.initrepository
+package uk.gov.hmrc.initrepository.bintray
 
-import com.github.tomakehurst.wiremock.client.{ResponseDefinitionBuilder, MappingBuilder, RequestPatternBuilder}
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.{MappingBuilder, RequestPatternBuilder, ResponseDefinitionBuilder}
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
-import org.scalatest.{WordSpec, Matchers, WordSpecLike}
+import org.scalatest.{Matchers, WordSpec}
+import uk.gov.hmrc.initrepository.{FutureValues, RequestException, ServiceCredentials, WireMockEndpoints}
 
 
 class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {
