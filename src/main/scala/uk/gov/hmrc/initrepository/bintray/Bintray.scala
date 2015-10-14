@@ -90,7 +90,10 @@ trait BintrayHttp{
 
   private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new WSClientConfig()).build())
 
-  def close() = ws.close()
+  def close() = {
+    Log.debug("closing bintray http client")
+    ws.close()
+  }
 
   def buildJsonCall(method:String, url:URL, body:Option[String] = None):WSRequest= {
 
@@ -104,11 +107,4 @@ trait BintrayHttp{
       req.withBody(b)
     }.getOrElse(req)
   }
-
-
-  Runtime.getRuntime.addShutdownHook(new Thread {
-    override def run(): Unit = {
-      ws.close()
-    }
-  })
 }

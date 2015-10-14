@@ -63,7 +63,7 @@ object Main {
 
   def buildBintrayService(repositoryType:RepositoryType) = new BintrayService {
 
-    override def bintray = new Bintray {
+    override val bintray = new Bintray {
       override val http: BintrayHttp = new BintrayHttp {
         override val creds: ServiceCredentials = findBintrayCreds()
       }

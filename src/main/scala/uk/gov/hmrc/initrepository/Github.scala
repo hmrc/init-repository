@@ -127,7 +127,10 @@ trait GithubHttp{
 
   private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new NingWSClientConfig()).build())
 
-  def close() = ws.close()
+  def close() = {
+    ws.close()
+    Log.debug("closing github http client")
+  }
 
   def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequest={
 
