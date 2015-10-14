@@ -23,56 +23,63 @@ import java.util.concurrent.TimeUnit
 import ch.qos.logback.classic.{Level, Logger}
 import org.slf4j.LoggerFactory
 import uk.gov.hmrc.initrepository.ArgParser.Config
+import uk.gov.hmrc.initrepository.RepositoryType.RepositoryType
 import uk.gov.hmrc.initrepository.bintray._
 import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+object RepositoryType extends Enumeration {
+  type RepositoryType = Value
+  val Sbt, SbtPlugin = Value
+}
 
 object Main {
 
-  def buildBintrayService(isSbtPlugin:Boolean) = new BintrayService {
+  def findGithubCreds(): ServiceCredentials = {
+    val githubCredsFile = System.getProperty("user.home") + "/.github/.credentials"
+    val githubCredsOpt = CredentialsFinder.findGithubCredsInFile(new File(githubCredsFile).toPath)
+    val creds = githubCredsOpt.getOrElse(throw new scala.IllegalArgumentException(s"Did not find valid Github credentials in ${githubCredsFile}"))
+
+    Log.debug(s"github client_id ${creds.user}")
+    Log.debug(s"github client_secret ${creds.pass.takeRight(3)}*******")
+
+    creds
+  }
+
+  def findBintrayCreds():ServiceCredentials={
 
     val bintrayCredsFile = System.getProperty("user.home") + "/.bintray/.credentials"
-
     val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
 
-    if(bintrayCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Bintray credentials in ${bintrayCredsFile}")
+    val creds = bintrayCredsOpt.getOrElse(throw new IllegalArgumentException(s"Did not find valid Bintray credentials in ${bintrayCredsFile}"))
 
+    Log.debug(s"bintrayCredsOpt client_id ${creds.user}")
+    Log.debug(s"bintrayCredsOpt client_secret ${creds.pass.takeRight(3)}*******")
 
-    private val bintrayHttpImpl = new BintrayHttp {
-      override val creds: ServiceCredentials = bintrayCredsOpt.get
+    creds
+  }
 
-      Log.debug(s"bintrayCredsOpt client_id ${creds.user}")
-      Log.debug(s"bintrayCredsOpt client_secret ${creds.pass.takeRight(3)}*******")
-    }
+  def buildBintrayService(repositoryType:RepositoryType) = new BintrayService {
 
     override def bintray = new Bintray {
-      override val http: BintrayHttp = bintrayHttpImpl
+      override val http: BintrayHttp = new BintrayHttp {
+        override val creds: ServiceCredentials = findBintrayCreds()
+      }
       override val urls: BintrayUrls = new BintrayUrls()
     }
 
-    override val repositories: Set[String] = BintrayConfig(isSbtPlugin)
+    override val repositories: Set[String] = BintrayConfig(repositoryType)
   }
 
   def buildGithub() = new Github{
 
-    val githubCredsFile  = System.getProperty("user.home") + "/.github/.credentials"
-    val githubCredsOpt  = CredentialsFinder.findGithubCredsInFile(new File(githubCredsFile).toPath)
-    if(githubCredsOpt.isEmpty) throw new IllegalArgumentException(s"Did not find valid Github credentials in ${githubCredsFile}")
-
-    private val githubHttpImpl = new GithubHttp {
-      override val creds: ServiceCredentials = githubCredsOpt.get
-
-      Log.debug(s"github client_id ${creds.user}")
-      Log.debug(s"github client_secret ${creds.pass.takeRight(3)}*******")
-
+    override val githubHttp: GithubHttp = new GithubHttp {
+      override val creds: ServiceCredentials = findGithubCreds()
     }
 
-    override val githubHttp: GithubHttp = githubHttpImpl
     override val githubUrls: GithubUrls =  new GithubUrls()
-
   }
 
   def git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
@@ -81,19 +88,20 @@ object Main {
   def main(args: Array[String]) {
 
       ArgParser.parser.parse(args, Config()) foreach { config =>
+        val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
         if(config.verbose) {
-          val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
           root.setLevel(Level.DEBUG)
+        } else {
+          root.setLevel(Level.INFO)
         }
-        start(config.repoName, config.teamName, config.isSbtPlugin)
+        start(config.repoName, config.teamName, config.repoType)
       }
-
   }
 
-  def start(newRepoName: String, team: String, isSbtPlugin: Boolean): Unit = {
+  def start(newRepoName: String, team: String, repositoryType:RepositoryType): Unit = {
 
     val github = buildGithub()
-    val bintray = buildBintrayService(isSbtPlugin)
+    val bintray = buildBintrayService(repositoryType)
 
     try {
       val result = new Coordinator(github, bintray, git)

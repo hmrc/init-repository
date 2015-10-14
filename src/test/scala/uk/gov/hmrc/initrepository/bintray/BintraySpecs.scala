@@ -21,7 +21,7 @@ import com.github.tomakehurst.wiremock.client.{MappingBuilder, RequestPatternBui
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
-import uk.gov.hmrc.initrepository.{FutureValues, RequestException, ServiceCredentials, WireMockEndpoints}
+import uk.gov.hmrc.initrepository._
 
 
 class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {
@@ -88,7 +88,8 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       assertRequest(
         method = POST,
         url = "/packages/hmrc/releases",
-        body = Some(""" {
+        body = Some(
+          """ {
                       |    "name": "domain",
                       |    "desc": "domain releases",
                       |    "labels": [],
@@ -115,6 +116,14 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       }
     }
   }
+
+  "BintrayConfig" should {
+    "return correct repository names based on repository type" in {
+      BintrayConfig.apply(RepositoryType.SbtPlugin).head should startWith("sbt")
+      BintrayConfig.apply(RepositoryType.Sbt).head should not startWith("sbt")
+    }
+  }
+
 
   def assertRequest(method:RequestMethod, url:String, body:Option[String]): Unit ={
     val builder = new RequestPatternBuilder(method, urlEqualTo(url))
