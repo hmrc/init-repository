@@ -71,12 +71,12 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       val coord = new Coordinator(github, bintray, git)
       coord.run(newRepoName, team = "un-used-in-this", RepositoryType.SbtPlugin).await
 
-      origin.lastTag(newRepoName).await.value shouldBe "v0.1.0"
+      origin.lastTag(newRepoName).get.value shouldBe "v0.1.0"
     }
 
     def createOriginWithOneCommit(newRepoName:String) = {
       val bareOriginGitStore = new LocalGitStore(bareOriginGitStoreDir)
-      bareOriginGitStore.init(newRepoName, isBare = true).await
+      bareOriginGitStore.init(newRepoName, isBare = true)
       createACommit(bareOriginGitStoreDir.resolve(newRepoName).toString, newRepoName)
       bareOriginGitStore
     }
@@ -86,9 +86,9 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       val gitStore = Files.createTempDirectory("temporary-git-dir")
       val git = new LocalGitStore(gitStore)
 
-      git.cloneRepoURL(bareRepoUrl).await
-      git.commitFileToRoot(newRepoName, "LICENCE", "the licence", "hmrc-web-operations", "e@ma.il").await
-      git.push(newRepoName).await
+      git.cloneRepoURL(bareRepoUrl)
+      git.commitFileToRoot(newRepoName, "LICENCE", "the licence", "hmrc-web-operations", "e@ma.il")
+      git.push(newRepoName)
 
       FileUtils.deleteDirectory(gitStore.toFile)
 

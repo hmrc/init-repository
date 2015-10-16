@@ -19,11 +19,13 @@ package uk.gov.hmrc.initrepository
 import java.nio.file.{Files, Path, Paths}
 
 import uk.gov.hmrc.initrepository.git.LocalGitStore
-import org.scalatest.{OptionValues, BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest._
 
 import scala.collection.JavaConversions._
+import scala.util.Try
 
-class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValues with BeforeAndAfterEach{
+
+class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValues with TryValues with BeforeAndAfterEach{
 
   val thisProjectsPath = Paths.get(".").toAbsolutePath.normalize()
   val thisRepoName = thisProjectsPath.getFileName.toString
@@ -40,22 +42,22 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
   "Git.cloneRepo" should {
 
     "clone a repo" in {
-      git.cloneRepoURL(thisProjectsPath.toString).await
+      git.cloneRepoURL(thisProjectsPath.toString)
       
       tempDir.resolve(thisRepoName).resolve(".git").toFile.isDirectory shouldBe true
     }
   }
   
   def cloneThisRepo(git:LocalGitStore, targetDir:Path): Unit ={
-    git.cloneRepoURL(thisProjectsPath.toString).await
+    git.cloneRepoURL(thisProjectsPath.toString)
   }
 
   "Git.lastCommitSha" should {
     "get last commit sha " in {
       repoWithOneCommit("test-repo", "README.md")
 
-      git.commitCount("test-repo").await shouldBe 1
-      git.lastCommitSha("test-repo").await.value.length() shouldBe 40
+      git.commitCount("test-repo").get shouldBe 1
+      git.lastCommitSha("test-repo").get.value.length() shouldBe 40
     }
   }
 
@@ -63,40 +65,40 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
     "tag a given commit" in {
       repoWithOneCommit("test-repo", "README.md")
 
-      val lastCommit = git.lastCommitSha("test-repo").await.value
+      val lastCommit = git.lastCommitSha("test-repo").get.get
 
-      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "v0.1.0").await
-      git.lastTag("test-repo").await.value shouldBe "v0.1.0"
+      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "v0.1.0")
+      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
     }
 
     "tag a given commit with a leading 'v' in the version number if it is missed off" in {
       repoWithOneCommit("test-repo", "README.md")
 
-      val lastCommit = git.lastCommitSha("test-repo").await.value
+      val lastCommit = git.lastCommitSha("test-repo").get.value
 
-      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "0.1.0").await
-      git.lastTag("test-repo").await.value shouldBe "v0.1.0"
+      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "0.1.0")
+      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
     }
   }
 
   def repoWithOneCommit(name:String, fileName:String): Unit ={
-    git.init(name).await
-    git.commitFileToRoot(name, "README.md", fileContent = "Some useful info.", "user", "email").await
+    git.init(name)
+    git.commitFileToRoot(name, "README.md", fileContent = "Some useful info.", "user", "email")
   }
 
   "Git.commitFileToRoot" should {
 
     "commit a file with given contents to the repository root when the file doesn't exist with a given username" in {
-      git.init("test-repo").await
+      git.init("test-repo")
       git.commitFileToRoot(
         "test-repo",
         "README.md",
         fileContent = "Some useful info.",
         user = "hmrc-web-operations",
-        email = "hmrc-web-operations@digital.hmrc.gov.uk").await
+        email = "hmrc-web-operations@digital.hmrc.gov.uk")
 
-      git.commitCount("test-repo").await shouldBe 1
-      git.lastCommitUser("test-repo").await.value shouldBe "hmrc-web-operations"
+      git.commitCount("test-repo").get shouldBe 1
+      git.lastCommitUser("test-repo").get.get shouldBe "hmrc-web-operations"
       Files.readAllLines(tempDir.resolve("test-repo").resolve("README.md")).head.trim shouldBe "Some useful info."
     }
   }

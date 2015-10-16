@@ -22,6 +22,7 @@ import uk.gov.hmrc.initrepository.git.LocalGitService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
 
@@ -38,7 +39,7 @@ class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
              _ <- bintray.createPackagesFor(newRepoName);
              teamIdO <- github.teamId(team);
              _ <- addRepoToTeam(newRepoName, teamIdO);
-             _ <- git.initialiseRepository(repoUrl, repositoryType)
+             _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType))
         ) yield repoUrl
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
@@ -53,6 +54,15 @@ class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
     teamIdO.map { teamId =>
       github.addRepoToTeam(repoName, teamIdO.get)
     }.getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
+  }
+
+  def tryToFuture[A](t: => Try[A]): Future[A] = {
+    Future {
+      t
+    }.flatMap {
+      case Success(s) => Future.successful(s)
+      case Failure(fail) => Future.failed(fail)
+    }
   }
 
 

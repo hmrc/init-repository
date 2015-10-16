@@ -23,6 +23,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
 import scala.concurrent.Future
+import scala.util.Success
 
 
 class CoordinatorTests extends WordSpec with Matchers with FutureValues with BeforeAndAfterEach with MockitoSugar {
@@ -48,7 +49,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(github.addRepoToTeam("newrepo", 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository("repo-url", RepositoryType.Sbt)) thenReturn Future.successful()
+      when(git.initialiseRepository("repo-url", RepositoryType.Sbt)) thenReturn Success()
 
       new Coordinator(github, bintray, git).run("newrepo", "teamname", RepositoryType.Sbt).await
 

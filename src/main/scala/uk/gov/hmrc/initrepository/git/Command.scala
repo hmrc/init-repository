@@ -22,13 +22,16 @@ import uk.gov.hmrc.initrepository.Log
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.sys.process.{Process, ProcessLogger}
+import scala.concurrent.duration._
+import scala.util.{Try, Failure, Success}
+import uk.gov.hmrc.initrepository.ImplicitPimps._
 
 object Command {
 
-  def run(cmd:String, inDir:Option[Path] = None):Future[List[String]]= {
-    Future {
+  def run(cmd:String, inDir:Option[Path] = None):Try[List[String]]= {
+    val cmdF = Future {
       val pb = inDir.fold(Process(cmd)) { path => Process(cmd, cwd = path.toFile) }
 
       val out = ListBuffer[String]()
@@ -44,10 +47,13 @@ object Command {
 
       out.toList
     }
+
+    Await.ready(cmdF, 1 minute)
+    cmdF.value.get
   }
 
-  def runArray(cmd:Array[String], inDir:Option[Path] = None):Future[List[String]]= {
-    Future {
+  def runArray(cmd:Array[String], inDir:Option[Path] = None):Try[List[String]]= {
+    val cmdF = Future {
       val pb = inDir.fold(Process(cmd)) { path => Process(cmd, cwd = path.toFile) }
 
       val out = ListBuffer[String]()
@@ -61,5 +67,8 @@ object Command {
 
       out.toList
     }
+
+    Await.ready(cmdF, 1 minute)
+    cmdF.value.get
   }
 }

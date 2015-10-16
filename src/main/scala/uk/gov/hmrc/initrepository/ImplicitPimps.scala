@@ -18,7 +18,8 @@ package uk.gov.hmrc.initrepository
 
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Promise, Await, Future}
+import scala.util.Try
 
 object ImplicitPimps {
 
