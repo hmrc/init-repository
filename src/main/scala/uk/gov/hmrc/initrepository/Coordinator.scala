@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.initrepository
 
+import uk.gov.hmrc.initrepository.RepositoryType.RepositoryType
 import uk.gov.hmrc.initrepository.bintray.BintrayService
 import uk.gov.hmrc.initrepository.git.LocalGitService
 
@@ -28,7 +29,7 @@ class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName:String, team:String):Future[Unit]= {
+  def run(newRepoName:String, team:String, repositoryType:RepositoryType):Future[Unit]= {
 
     checkPreConditions(newRepoName, team).flatMap { error =>
       if (error.isEmpty) {
@@ -37,7 +38,7 @@ class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
              _ <- bintray.createPackagesFor(newRepoName);
              teamIdO <- github.teamId(team);
              _ <- addRepoToTeam(newRepoName, teamIdO);
-             _ <- git.initialiseRepository(repoUrl)
+             _ <- git.initialiseRepository(repoUrl, repositoryType)
         ) yield repoUrl
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))

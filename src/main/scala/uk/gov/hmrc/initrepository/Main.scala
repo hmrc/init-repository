@@ -30,6 +30,7 @@ import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+
 object RepositoryType extends Enumeration {
   type RepositoryType = Value
   val Sbt, SbtPlugin = Value
@@ -105,7 +106,7 @@ object Main {
 
     try {
       val result = new Coordinator(github, bintray, git)
-        .run(newRepoName, team)
+        .run(newRepoName, team, repositoryType)
 
       Await.result(result, Duration(60, TimeUnit.SECONDS))
     } finally {

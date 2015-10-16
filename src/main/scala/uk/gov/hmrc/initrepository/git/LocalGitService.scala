@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.initrepository.git
 
+import uk.gov.hmrc.initrepository.RepositoryType.RepositoryType
+import uk.gov.hmrc.initrepository.bintray.BintrayConfig
+
 import scala.concurrent.Future
 import uk.gov.hmrc.initrepository.ImplicitPimps._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -31,11 +34,13 @@ class LocalGitService(git: LocalGitStore) {
   val CommitUserName = "hmrc-web-operations"
   val CommitUserEmail = "hmrc-web-operations@digital.hmrc.gov.uk"
 
-  def buildReadmeTemplate(repoName:String):String={
+  def buildReadmeTemplate(repoName:String, repositoryType:RepositoryType):String={
+    val bintrayRepoName = BintrayConfig.releasesRepositoryNameFor(repositoryType)
+
     s"""
       |# $repoName
       |
-      |[![Build Status](https://travis-ci.org/hmrc/$repoName.svg?branch=master)](https://travis-ci.org/hmrc/$repoName) [ ![Download](https://api.bintray.com/packages/hmrc/releases/$repoName/images/download.svg) ](https://bintray.com/hmrc/releases/$repoName/_latestVersion)
+      |[![Build Status](https://travis-ci.org/hmrc/$repoName.svg?branch=master)](https://travis-ci.org/hmrc/$repoName) [ ![Download](https://api.bintray.com/packages/hmrc/$bintrayRepoName/$repoName/images/download.svg) ](https://bintray.com/hmrc/$bintrayRepoName/$repoName/_latestVersion)
       |
       |This is a placeholder README.md for a new repository
       |
@@ -83,13 +88,13 @@ class LocalGitService(git: LocalGitStore) {
     """.stripMargin
   }
 
-  def initialiseRepository(repoUrl: String) : Future[Unit]={
+  def initialiseRepository(repoUrl: String, repositoryType:RepositoryType) : Future[Unit]={
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for(
       _ <- git.cloneRepoURL(repoUrl).await;
       _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail).await;
       _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail).await;
-      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName), CommitUserName, CommitUserEmail).await;
+      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType), CommitUserName, CommitUserEmail).await;
       shaO <- git.lastCommitSha(newRepoName);
       _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion).await;
       _ <- git.push(newRepoName).await;

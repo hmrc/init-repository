@@ -23,13 +23,18 @@ object BintrayConfig{
 
   import RepositoryType._
 
-  private[bintray] val sbtPluginBintrayRepos = Set("sbt-plugin-releases", "sbt-plugin-release-candidates")
-  private[bintray] val sbtStandardBintrayRepos = Set("releases", "release-candidates")
+  private[bintray] val sbtPluginBintrayRepos = Seq("sbt-plugin-releases", "sbt-plugin-release-candidates")
+  private[bintray] val sbtStandardBintrayRepos = Seq("releases", "release-candidates")
 
   def apply(repositoryType:RepositoryType):Set[String]={
     repositoryType match {
-      case SbtPlugin => BintrayConfig.sbtPluginBintrayRepos
-      case Sbt       => BintrayConfig.sbtStandardBintrayRepos
+      case SbtPlugin => BintrayConfig.sbtPluginBintrayRepos.toSet
+      case Sbt       => BintrayConfig.sbtStandardBintrayRepos.toSet
     }
+  }
+
+
+  def releasesRepositoryNameFor(repositoryType:RepositoryType):String={
+    apply(repositoryType).head
   }
 }

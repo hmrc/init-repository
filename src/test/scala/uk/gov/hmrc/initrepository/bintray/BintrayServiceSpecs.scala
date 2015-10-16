@@ -38,7 +38,7 @@ class BintrayServiceSpecs extends WordSpec with Matchers with FutureValues with 
 
       val bintrayService = new BintrayService{
         override val bintray: Bintray = mockBintray
-        override val repositories = BintrayConfig.sbtStandardBintrayRepos
+        override val repositories = BintrayConfig.sbtStandardBintrayRepos.toSet
       }
 
       bintrayService.reposContainingPackage("newRepo").await shouldBe Set.empty[String]
@@ -53,7 +53,7 @@ class BintrayServiceSpecs extends WordSpec with Matchers with FutureValues with 
 
       val bintrayService = new BintrayService{
         override val bintray: Bintray = mockBintray
-        override val repositories = BintrayConfig.sbtStandardBintrayRepos
+        override val repositories = BintrayConfig.sbtStandardBintrayRepos.toSet
       }
 
       bintrayService.reposContainingPackage("newRepo").await shouldBe Set("releases", "release-candidates")
@@ -68,7 +68,7 @@ class BintrayServiceSpecs extends WordSpec with Matchers with FutureValues with 
 
       val bintrayService = new BintrayService{
         override val bintray: Bintray = mockBintray
-        override val repositories = BintrayConfig.sbtStandardBintrayRepos
+        override val repositories = BintrayConfig.sbtStandardBintrayRepos.toSet
       }
 
       bintrayService.createPackagesFor("newRepo").await

@@ -48,9 +48,9 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(github.addRepoToTeam("newrepo", 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository("repo-url")) thenReturn Future.successful()
+      when(git.initialiseRepository("repo-url", RepositoryType.Sbt)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray, git).run("newrepo", "teamname").await
+      new Coordinator(github, bintray, git).run("newrepo", "teamname", RepositoryType.Sbt).await
 
       // verify pre-conditions
       verify(github).containsRepo("newrepo")

@@ -122,6 +122,11 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       BintrayConfig.apply(RepositoryType.SbtPlugin).head should startWith("sbt")
       BintrayConfig.apply(RepositoryType.Sbt).head should not startWith("sbt")
     }
+
+    "return the releases repository name" in {
+      BintrayConfig.releasesRepositoryNameFor(RepositoryType.SbtPlugin) shouldBe "sbt-plugin-releases"
+      BintrayConfig.releasesRepositoryNameFor(RepositoryType.Sbt) shouldBe "releases"
+    }
   }
 
 
