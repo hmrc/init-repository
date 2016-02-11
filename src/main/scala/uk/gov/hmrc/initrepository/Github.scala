@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 HM Revenue & Customs
+ * Copyright 2016 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class GithubUrls( orgName:String = "hmrc",
     new URL(s"$apiRoot/repos/$orgName/$repo")
 
   def teams =
-    new URL(s"$apiRoot/orgs/$orgName/teams")
+    new URL(s"$apiRoot/orgs/$orgName/teams?per_page=100")
 
   def addTeamToRepo(repoName:String, teamId:Int) =
     new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName?permission=push")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 HM Revenue & Customs
+ * Copyright 2016 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     "find a team ID for a team name when the team exists" in {
       givenGitHubExpects(
         method = GET,
-        url = "/orgs/hmrc/teams",
+        url = "/orgs/hmrc/teams?per_page=100",
         willRespondWith = (200, Some(
           """
             |[
@@ -104,7 +104,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     "return None when the team does not exist" in {
       givenGitHubExpects(
         method = GET,
-        url = "/orgs/hmrc/teams",
+        url = "/orgs/hmrc/teams?per_page=100",
         willRespondWith = (200, Some(
           """
             |[
