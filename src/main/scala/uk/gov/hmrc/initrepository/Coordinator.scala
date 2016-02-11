@@ -24,23 +24,22 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
+class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService) {
 
   import ImplicitPimps._
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName:String, team:String, repositoryType:RepositoryType):Future[Unit]= {
+  def run(newRepoName: String, team: String, repositoryType: RepositoryType): Future[Unit] = {
 
     checkPreConditions(newRepoName, team).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
-        for (repoUrl <- github.createRepo(newRepoName).await;
-             _ <- bintray.createPackagesFor(newRepoName);
-             teamIdO <- github.teamId(team);
-             _ <- addRepoToTeam(newRepoName, teamIdO);
-             _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType))
-        ) yield repoUrl
+
+        initGitRepo(newRepoName, team, repositoryType).flatMap { repoUrl =>
+          bintray.createPackagesFor(newRepoName).map(_ => repoUrl)
+        }
+
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
       }
@@ -50,7 +49,17 @@ class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
     }
   }
 
-  def addRepoToTeam(repoName:String, teamIdO:Option[Int]):Future[Unit]={
+  def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType): Future[String] =
+
+    for {
+      teamId <- github.teamId(team)
+      repoUrl <- github.createRepo(newRepoName)
+      _ <- addRepoToTeam(newRepoName, teamId)
+      _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType))
+    } yield repoUrl
+
+
+  def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {
     teamIdO.map { teamId =>
       github.addRepoToTeam(repoName, teamIdO.get)
     }.getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
@@ -66,13 +75,13 @@ class Coordinator(github:Github, bintray: BintrayService, git:LocalGitService){
   }
 
 
-  def checkPreConditions(newRepoName:String, team:String):Future[PreConditionError[String]]  ={
-    for(repoExists  <- github.containsRepo(newRepoName);
-        existingPackages <- bintray.reposContainingPackage(newRepoName);
-        teamExists <- github.teamId(team).map(_.isDefined))
-      yield{
-        if (repoExists)  Some(s"Repository with name '$newRepoName' already exists in github ")
-        else if (existingPackages.nonEmpty)  Some(s"The following bintray packages already exist: '${existingPackages.mkString(",")}'")
+  def checkPreConditions(newRepoName: String, team: String): Future[PreConditionError[String]] = {
+    for (repoExists <- github.containsRepo(newRepoName);
+         existingPackages <- bintray.reposContainingPackage(newRepoName);
+         teamExists <- github.teamId(team).map(_.isDefined))
+      yield {
+        if (repoExists) Some(s"Repository with name '$newRepoName' already exists in github ")
+        else if (existingPackages.nonEmpty) Some(s"The following bintray packages already exist: '${existingPackages.mkString(",")}'")
         else if (!teamExists) Some(s"Team with name '$team' could not be found in github")
         else None
       }
