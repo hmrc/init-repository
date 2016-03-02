@@ -41,6 +41,9 @@ class GithubUrls( orgName:String = "hmrc",
 
   def addTeamToRepo(repoName:String, teamId:Int) =
     new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName?permission=push")
+
+  def webhook(repoName: String) =
+    new URL(s"$apiRoot/repos/$orgName/$repoName/hooks")
 }
 
 class RequestException(request:WSRequest, response:WSResponse)
@@ -113,6 +116,29 @@ trait Github{
                     |}""".stripMargin
 
       githubHttp.postJsonString(githubUrls.createRepo, payload).map { _ => s"git@github.com:hmrc/$repoName.git" }
+  }
+
+  def createWebhook(repoName: String, webhookUrl: String): Future[String] = {
+    Log.info(s"creating github webhook for repo '$repoName' with webhook URL '$webhookUrl'")
+    val payload = s"""{
+                   |    "name": "$repoName",
+                   |    "active": true,
+                   |    "events": [
+                   |        "issues",
+                   |        "pull_request",
+                   |        "pull_request_review_comment",
+                   |        "release",
+                   |        "status"
+                   |    ],
+                   |    "config": {
+                   |        "url": "$webhookUrl",
+                   |        "content_type": "json"
+                   |    }
+                   |}
+                 """.stripMargin
+    githubHttp.postJsonString(githubUrls.webhook(repoName), payload).map { response =>
+      (Json.parse(response) \ "url").as[String]
+    }
   }
 
   def close() = githubHttp.close()
