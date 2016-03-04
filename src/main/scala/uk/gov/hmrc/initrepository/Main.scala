@@ -97,9 +97,7 @@ object Main {
           root.setLevel(Level.INFO)
         }
 
-        val webhookUrl = Properties.envOrNone("webhookUrl")
-
-        start(config.repoName, config.teamName, config.repoType, webhookUrl)
+        start(config.repoName, config.teamName, config.repoType, config.webhookUrl)
       }
   }
 

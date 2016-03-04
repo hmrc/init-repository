@@ -27,6 +27,7 @@ object ArgParser{
                      repoName: String = "",
                      teamName:String = "",
                      repoType:RepositoryType = RepositoryType.Sbt,
+                     webhookUrl: Option[String] = None,
                      verbose:Boolean = false)
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
@@ -47,6 +48,9 @@ object ArgParser{
 
     arg[RepositoryType]("repository-type") action { (x, c) =>
       c.copy(repoType = x) } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
+
+    opt[String]("webhook-url") action { (x, c) =>
+      c.copy(webhookUrl = Some(x)) } text "the url to add as a github webhook"
 
     opt[Unit]('v', "verbose") action { (x, c) =>
       c.copy(verbose = true) } text "verbose mode (debug logging)"
