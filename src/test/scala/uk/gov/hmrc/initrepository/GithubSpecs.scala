@@ -178,6 +178,30 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     }
   }
 
+  "Github.createWebhook" should {
+    "successfully create webhook" in {
+      val gitHubResponse =
+        """
+          |{
+          |   "id": 1,
+          |   "url": "https://api.github.com/repos/hmrc/domain/hooks/1",
+          |   "test_url": "https://api.github.com/repos/hmrc/domain/hooks/1/test",
+          |   "ping_url": "https://api.github.com/repos/hmrc/domain/hooks/1/pings"
+          |}
+        """.stripMargin
+
+      givenGitHubExpects(
+        method = POST,
+        url = "/repos/hmrc/domain/hooks",
+        willRespondWith = (200, Some(gitHubResponse))
+      )
+
+      val webhookResponse = github.createWebhook("domain", "http://webhookurl").await
+
+      webhookResponse shouldBe "https://api.github.com/repos/hmrc/domain/hooks/1"
+    }
+  }
+
   case class GithubRequest(method:RequestMethod, url:String, body:Option[String]){
 
     {

@@ -30,13 +30,13 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName: String, team: String, repositoryType: RepositoryType): Future[Unit] = {
+  def run(newRepoName: String, team: String, repositoryType: RepositoryType, webhookUrl: Option[String]): Future[Unit] = {
 
     checkPreConditions(newRepoName, team).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
 
-        initGitRepo(newRepoName, team, repositoryType).flatMap { repoUrl =>
+        initGitRepo(newRepoName, team, repositoryType, webhookUrl).flatMap { repoUrl =>
           bintray.createPackagesFor(newRepoName).map(_ => repoUrl)
         }
 
@@ -49,12 +49,13 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
     }
   }
 
-  def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType): Future[String] =
+  def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType, webhookUrl: Option[String]): Future[String] =
 
     for {
       teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName)
       _ <- addRepoToTeam(newRepoName, teamId)
+      _ <- webhookUrl.map(github.createWebhook(newRepoName, _)).getOrElse(Future.successful[String](""))
       _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType))
     } yield repoUrl
 
