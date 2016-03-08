@@ -47,12 +47,11 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(github.createRepo("newrepo")) thenReturn Future.successful("repo-url")
       when(bintray.createPackagesFor("newrepo")) thenReturn Future.successful()
       when(github.addRepoToTeam("newrepo", 1)) thenReturn Future.successful()
-      when(github.createWebhook("newrepo", "webhookurl")) thenReturn Future.successful("webhookresource")
 
       // setup git calls
       when(git.initialiseRepository("repo-url", RepositoryType.Sbt)) thenReturn Success()
 
-      new Coordinator(github, bintray, git).run("newrepo", "teamname", RepositoryType.Sbt, Some("webhookurl")).await
+      new Coordinator(github, bintray, git).run("newrepo", "teamname", RepositoryType.Sbt).await
 
       // verify pre-conditions
       verify(github).containsRepo("newrepo")
@@ -63,7 +62,6 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       verify(github).createRepo("newrepo")
       verify(bintray).createPackagesFor("newrepo")
       verify(github).addRepoToTeam("newrepo", 1)
-      verify(github).createWebhook("newrepo", "webhookurl")
 
     }
   }

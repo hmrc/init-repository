@@ -29,7 +29,6 @@ import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.util.Properties
 
 
 object RepositoryType extends Enumeration {
@@ -96,19 +95,18 @@ object Main {
         } else {
           root.setLevel(Level.INFO)
         }
-
-        start(config.repoName, config.teamName, config.repoType, config.webhookUrl)
+        start(config.repoName, config.teamName, config.repoType)
       }
   }
 
-  def start(newRepoName: String, team: String, repositoryType:RepositoryType, webhookUrl: Option[String]): Unit = {
+  def start(newRepoName: String, team: String, repositoryType:RepositoryType): Unit = {
 
     val github = buildGithub()
     val bintray = buildBintrayService(repositoryType)
 
     try {
       val result = new Coordinator(github, bintray, git)
-        .run(newRepoName, team, repositoryType, webhookUrl)
+        .run(newRepoName, team, repositoryType)
 
       Await.result(result, Duration(60, TimeUnit.SECONDS))
     } finally {
