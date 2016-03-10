@@ -62,6 +62,9 @@ class LocalGitService(git: LocalGitStore) {
       |cache:
       |  directories:
       |    - '$$HOME/.ivy2/cache'
+      |branches:
+      |  except:
+      |    - master
     """.stripMargin
   }
 

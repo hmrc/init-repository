@@ -7,7 +7,6 @@ jdk:
 cache:
   directories:
     - '$HOME/.ivy2/cache'
-notifications:
-  email:
-    recipients:
-    - platform-engineering@digital.hmrc.gov.uk
+branches:
+  except:
+    - master
