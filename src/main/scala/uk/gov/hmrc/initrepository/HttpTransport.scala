@@ -33,7 +33,7 @@ trait HttpTransport {
 
   def close() = {
     ws.close()
-    Log.debug("closing github http client")
+    Log.debug("closing http client")
   }
 
   def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequest={
