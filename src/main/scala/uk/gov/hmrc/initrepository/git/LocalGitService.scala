@@ -19,9 +19,6 @@ package uk.gov.hmrc.initrepository.git
 import uk.gov.hmrc.initrepository.RepositoryType.RepositoryType
 import uk.gov.hmrc.initrepository.bintray.BintrayConfig
 
-import scala.concurrent.Future
-import uk.gov.hmrc.initrepository.ImplicitPimps._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Try}
 
 class LocalGitService(git: LocalGitStore) {

@@ -26,8 +26,6 @@ import scala.util.{Failure, Success, Try}
 
 class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService) {
 
-  import ImplicitPimps._
-
   type PreConditionError[T] = Option[T]
 
   def run(newRepoName: String, team: String, repositoryType: RepositoryType): Future[Unit] = {

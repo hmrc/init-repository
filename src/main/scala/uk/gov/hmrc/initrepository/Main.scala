@@ -50,7 +50,6 @@ object Main {
   }
 
   def findBintrayCreds():ServiceCredentials={
-
     val bintrayCredsFile = System.getProperty("user.home") + "/.bintray/.credentials"
     val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
 
@@ -68,6 +67,7 @@ object Main {
       override val http: BintrayHttp = new BintrayHttp {
         override val creds: ServiceCredentials = findBintrayCreds()
       }
+
       override val urls: BintrayUrls = new BintrayUrls()
     }
 

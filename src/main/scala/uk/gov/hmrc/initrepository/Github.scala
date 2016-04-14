@@ -121,7 +121,7 @@ trait Github{
 case class SimpleResponse(status:Int, rawBody:String)
 
 
-trait GithubHttp{
+trait GithubHttp {
 
   def creds:ServiceCredentials
 

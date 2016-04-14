@@ -22,11 +22,10 @@ import uk.gov.hmrc.initrepository.Log
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.sys.process.{Process, ProcessLogger}
-import scala.concurrent.duration._
-import scala.util.{Try, Failure, Success}
-import uk.gov.hmrc.initrepository.ImplicitPimps._
+import scala.util.Try
 
 object Command {
 
