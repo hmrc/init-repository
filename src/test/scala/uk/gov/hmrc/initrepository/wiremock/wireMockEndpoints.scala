@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.initrepository
+package uk.gov.hmrc.initrepository.wiremock
 
 import java.net.ServerSocket
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import org.scalatest.{Suite, BeforeAndAfterEach, BeforeAndAfterAll}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
-import scala.util.Try
 import scala.collection.JavaConversions._
+import scala.util.Try
 
 trait WireMockEndpoints extends Suite with BeforeAndAfterAll with BeforeAndAfterEach{
 

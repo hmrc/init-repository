@@ -76,7 +76,7 @@ object Main {
 
   def buildGithub() = new Github{
 
-    override val githubHttp: GithubHttp = new GithubHttp {
+    override val httpTransport: HttpTransport = new HttpTransport {
       override val creds: ServiceCredentials = findGithubCreds()
     }
 

@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
 import uk.gov.hmrc.initrepository._
+import uk.gov.hmrc.initrepository.wiremock.WireMockEndpoints
 
 
 class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {

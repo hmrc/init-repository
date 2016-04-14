@@ -34,9 +34,10 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
 
-        initGitRepo(newRepoName, team, repositoryType).flatMap { repoUrl =>
-          bintray.createPackagesFor(newRepoName).map(_ => repoUrl)
-        }
+        for {
+          repoUrl <- initGitRepo(newRepoName, team, repositoryType)
+          result <- bintray.createPackagesFor(newRepoName).map(_ => repoUrl)
+        } yield result
 
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
@@ -48,14 +49,12 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
   }
 
   def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType): Future[String] =
-
     for {
       teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName)
       _ <- addRepoToTeam(newRepoName, teamId)
       _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType))
     } yield repoUrl
-
 
   def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {
     teamIdO.map { teamId =>

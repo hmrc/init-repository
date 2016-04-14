@@ -34,7 +34,7 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
       val github = new Github {
 
-        override def githubHttp: GithubHttp = ???
+        override def httpTransport: HttpTransport = ???
 
         override def githubUrls: GithubUrls = ???
 

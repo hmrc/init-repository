@@ -17,12 +17,9 @@
 package uk.gov.hmrc.initrepository
 
 import java.net.URL
-import java.nio.file.{Paths, Files}
 
-import uk.gov.hmrc.initrepository.git.Command
 import play.api.libs.json._
 import play.api.libs.ws._
-import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient, NingWSClientConfig}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -48,16 +45,16 @@ class RequestException(request:WSRequest, response:WSResponse)
 
 }
 
-trait Github{
+trait Github {
 
-  def githubHttp:GithubHttp
+  def httpTransport:HttpTransport
 
   def githubUrls:GithubUrls
 
   val IronManApplication = "application/vnd.github.ironman-preview+json"
 
   def teamId(team: String): Future[Option[Int]]={
-    val req = githubHttp.buildJsonCall("GET", githubUrls.teams)
+    val req = httpTransport.buildJsonCall("GET", githubUrls.teams)
 
 
     req.execute().flatMap { res => res.status match {
@@ -69,7 +66,7 @@ trait Github{
   def addRepoToTeam(repoName: String, teamId: Int):Future[Unit] = {
     Log.info(s"Adding $repoName to team ${teamId}")
 
-    val req = githubHttp
+    val req = httpTransport
       .buildJsonCall("PUT", githubUrls.addTeamToRepo(repoName, teamId))
       .withHeaders("Accept" -> IronManApplication)
       .withHeaders("Content-Length" -> "0")
@@ -90,7 +87,7 @@ trait Github{
 
 
   def containsRepo(repoName: String): Future[Boolean] = {
-    val req = githubHttp.buildJsonCall("GET", githubUrls.containsRepo(repoName))
+    val req = httpTransport.buildJsonCall("GET", githubUrls.containsRepo(repoName))
 
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(true)
@@ -112,59 +109,10 @@ trait Github{
                     |    "license_template": "apache-2.0"
                     |}""".stripMargin
 
-      githubHttp.postJsonString(githubUrls.createRepo, payload).map { _ => s"git@github.com:hmrc/$repoName.git" }
+      httpTransport.postJsonString(githubUrls.createRepo, payload).map { _ => s"git@github.com:hmrc/$repoName.git" }
   }
 
-  def close() = githubHttp.close()
+  def close() = httpTransport.close()
 }
 
 case class SimpleResponse(status:Int, rawBody:String)
-
-
-trait GithubHttp {
-
-  def creds:ServiceCredentials
-
-  private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new NingWSClientConfig()).build())
-
-  def close() = {
-    ws.close()
-    Log.debug("closing github http client")
-  }
-
-  def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequest={
-
-    val req = ws.url(url.toString)
-      .withMethod(method)
-      .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
-      .withHeaders(
-        "content-type" -> "application/json")
-
-    Log.debug("req = " + req)
-
-    body.map { b =>
-      req.withBody(b)
-    }.getOrElse(req)
-  }
-
-  def getBody(url:URL): Future[String] = {
-    get(url).map(_.body)
-  }
-
-  def get(url:URL): Future[WSResponse] = {
-    val resultF = buildJsonCall("GET", url).execute()
-    resultF.flatMap { res => res.status match {
-      case s if s >= 200 && s < 300 => Future.successful(res)
-      case _@e => Future.failed(new scala.Exception(s"Didn't get expected status code when reading from Github. Got status ${res.status}: GET ${url} ${res.body}"))
-    }}
-  }
-
-  def postJsonString(url:URL, body:String): Future[String] = {
-    buildJsonCall("POST", url, Some(Json.parse(body))).execute().flatMap { case result =>
-      result.status match {
-        case s if s >= 200 && s < 300 => Future.successful(result.body)
-        case _@e => Future.failed(new scala.Exception(s"Didn't get expected status code when writing to Github. Got status ${result.status}: POST ${url} ${result.body}"))
-      }
-    }
-  }
-}

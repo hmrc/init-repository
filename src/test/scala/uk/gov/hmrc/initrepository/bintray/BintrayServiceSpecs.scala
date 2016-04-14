@@ -19,7 +19,8 @@ package uk.gov.hmrc.initrepository.bintray
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import uk.gov.hmrc.initrepository.{FutureValues, WireMockEndpoints}
+import uk.gov.hmrc.initrepository.FutureValues
+import uk.gov.hmrc.initrepository.wiremock.WireMockEndpoints
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

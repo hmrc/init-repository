@@ -22,18 +22,18 @@ import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.Json
+import uk.gov.hmrc.initrepository.wiremock.{GithubWireMocks, WireMockEndpoints}
 
 
 
-class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {
+class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints with GithubWireMocks {
 
-  class FakeGithubHttp extends GithubHttp {
+  val transport = new HttpTransport {
     override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
   val github: Github = new Github{
-    override def githubHttp: GithubHttp = new FakeGithubHttp()
-
+    override def httpTransport: HttpTransport = transport
     override def githubUrls: GithubUrls = new GithubUrls(apiRoot = endpointMockUrl)
   }
 
@@ -210,26 +210,5 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
   def assertRequest(req:GithubRequest): Unit ={
     endpointMock.verifyThat(req.req)
-  }
-
-  def givenGitHubExpects(
-                          method:RequestMethod,
-                          url:String,
-                          extraHeaders:Map[String,String] = Map(),
-                          willRespondWith: (Int, Option[String])): Unit = {
-
-    val builder = new MappingBuilder(method, urlEqualTo(url))
-      .withHeader("Content-Type", equalTo("application/json"))
-
-    val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
-      .withStatus(willRespondWith._1)
-
-    val resp = willRespondWith._2.map { b =>
-      response.withBody(b)
-    }.getOrElse(response)
-
-    builder.willReturn(resp)
-
-    endpointMock.register(builder)
   }
 }
