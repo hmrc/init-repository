@@ -25,6 +25,8 @@ import uk.gov.hmrc.initrepository.wiremock.{TravisWireMocks, WireMockEndpoints}
 class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints with TravisWireMocks {
 
   val gitHubKey = "key"
+  val accessToken = "access"
+
   val urls = new TravisUrls("http://localhost:6001")
   val transport = new HttpTransport {
     override def creds: ServiceCredentials = ServiceCredentials("username", s"$gitHubKey")
@@ -67,9 +69,10 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
       givenTravisExpects(
         method = POST,
         url = new URL(urls.syncWithGithub.toString),
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (200, None))
 
-      travisConnector.syncWithGithub.await
+      travisConnector.syncWithGithub(accessToken).await
 
     }
 
@@ -78,9 +81,10 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
       givenTravisExpects(
         method = POST,
         url = new URL(urls.syncWithGithub.toString),
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (500, None))
 
-      a [RequestException] should be thrownBy travisConnector.syncWithGithub.await
+      a [RequestException] should be thrownBy travisConnector.syncWithGithub(accessToken).await
 
     }
 

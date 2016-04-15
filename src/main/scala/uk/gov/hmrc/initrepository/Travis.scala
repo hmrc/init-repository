@@ -19,6 +19,7 @@ package uk.gov.hmrc.initrepository
 import java.net.URL
 
 import play.api.libs.json.Json
+import play.api.libs.ws.WSAuthScheme
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -42,8 +43,8 @@ trait TravisConnector {
     }}
   }
 
-  def syncWithGithub: Future[Unit] = {
-    val req = post(travisUrls.syncWithGithub)
+  def syncWithGithub(accessToken: String): Future[Unit] = {
+    val req = post(travisUrls.syncWithGithub).withHeaders("Authorization" -> s"token $accessToken")
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(Unit)
       case _   => Future.failed(new RequestException(req, res))
