@@ -33,7 +33,9 @@ trait TravisWireMocks {
     willRespondWith: (Int, Option[String])): Unit = {
 
     val builder = payload.map {
-      json => createBuilder(method, url.getPath).withRequestBody(equalToJson(json))
+      json => createBuilder(method, url.getPath)
+        .withHeader("Content-Type", equalTo("application/json; charset=utf-8"))
+        .withRequestBody(equalToJson(json))
     }.getOrElse(createBuilder(method, url.getPath))
 
     val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
@@ -50,7 +52,6 @@ trait TravisWireMocks {
 
   private def createBuilder(method: RequestMethod, url: String): MappingBuilder = {
     new MappingBuilder(method, urlEqualTo(url))
-      .withHeader("Content-Type", equalTo("application/json; charset=utf-8"))
       .withHeader("User-Agent", equalTo("Travis/1.0"))
       .withHeader("Accept", equalTo("application/vnd.travis-ci.2+json"))
   }

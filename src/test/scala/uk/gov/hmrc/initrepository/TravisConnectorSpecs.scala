@@ -50,6 +50,40 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
     }
 
+    "Throw a requestexception if authentication receives a status other than 200" in {
+
+      givenTravisExpects(
+        method = GET,
+        url = new URL(urls.githubAuthentication.toString),
+        payload = Some(s"""{"github_token":"$gitHubKey"}"""),
+        willRespondWith = (500, None))
+
+      a [RequestException] should be thrownBy travisConnector.authenticate.await
+
+    }
+
+    "Return Unit on a succesful sync" in {
+
+      givenTravisExpects(
+        method = POST,
+        url = new URL(urls.syncWithGithub.toString),
+        willRespondWith = (200, None))
+
+      travisConnector.syncWithGithub.await
+
+    }
+
+    "Throw a requestexception if sync fails" in {
+
+      givenTravisExpects(
+        method = POST,
+        url = new URL(urls.syncWithGithub.toString),
+        willRespondWith = (500, None))
+
+      a [RequestException] should be thrownBy travisConnector.syncWithGithub.await
+
+    }
+
   }
 
 }

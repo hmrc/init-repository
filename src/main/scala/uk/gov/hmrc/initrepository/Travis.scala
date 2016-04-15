@@ -34,9 +34,7 @@ trait TravisConnector {
         "Get",
         travisUrls.githubAuthentication,
         Some(Json.obj("github_token" -> httpTransport.creds.pass)))
-      .withHeaders(
-        "User-Agent" -> "Travis/1.0",
-        "Accept" -> "application/vnd.travis-ci.2+json")
+      .withHeaders(standardHeaders: _*)
 
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(new TravisAuthenticationResult((res.json \ "access_token").as[String]))
@@ -44,11 +42,26 @@ trait TravisConnector {
     }}
   }
 
+  def syncWithGithub: Future[Unit] = {
+    val req = post(travisUrls.syncWithGithub)
+    req.execute().flatMap { res => res.status match {
+      case 200 => Future.successful(Unit)
+      case _   => Future.failed(new RequestException(req, res))
+    }}
+  }
+
+  private def post(url: URL) =
+    httpTransport.buildJsonCall("POST", url).withHeaders(standardHeaders: _*)
+
+  private val standardHeaders = Seq(
+    "User-Agent" -> "Travis/1.0",
+    "Accept" -> "application/vnd.travis-ci.2+json")
+
 }
 
 class TravisUrls(apiRoot:String = "https://api.github.com"){
-  def githubAuthentication: URL =
-    new URL(s"$apiRoot/auth/github")
+  def githubAuthentication: URL = new URL(s"$apiRoot/auth/github")
+  def syncWithGithub: URL = new URL(s"$apiRoot/users/sync")
 }
 
 case class TravisAuthenticationResult(accessToken: String)
