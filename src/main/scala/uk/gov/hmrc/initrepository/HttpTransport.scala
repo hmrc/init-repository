@@ -40,8 +40,6 @@ trait HttpTransport {
     val req = ws.url(url.toString)
       .withMethod(method)
       .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
-      .withHeaders(
-        "content-type" -> "application/json")
 
     Log.debug("req = " + req)
 
