@@ -30,8 +30,7 @@ trait GithubWireMocks {
                           willRespondWith: (Int, Option[String])): Unit = {
 
     val builder = new MappingBuilder(method, urlEqualTo(url))
-      .withHeader("Content-Type", equalTo("application/json"))
-
+    
     val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
       .withStatus(willRespondWith._1)
 
