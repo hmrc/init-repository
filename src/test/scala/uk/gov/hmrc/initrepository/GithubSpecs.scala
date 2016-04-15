@@ -32,7 +32,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
-  val github: Github = new Github{
+  val github: Github = new Github {
     override def httpTransport: HttpTransport = transport
     override def githubUrls: GithubUrls = new GithubUrls(apiRoot = endpointMockUrl)
   }
