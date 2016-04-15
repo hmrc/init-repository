@@ -88,6 +88,72 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
     }
 
+    "Retrieve the id of a newly synchronised repo" in {
+
+      val newRepoName = "new-repo"
+      val newRepoId = 6969931
+
+      val searchResponse =
+        s"""
+           |[
+           |{"id":$newRepoId,"slug":"hmrc/$newRepoName"},
+           |{"id":6844012,"slug":"hmrc/nisp"}
+           |]
+         """.stripMargin
+
+      val expectedUrl = new URL(urls.searchForRepo(newRepoName).toString)
+
+      givenTravisExpects(
+        method = GET,
+        url = expectedUrl,
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
+        willRespondWith = (200, Some(searchResponse)))
+
+      printMappings()
+
+      val actualNewRepoId = travisConnector.searchForRepo(accessToken, newRepoName).await
+      actualNewRepoId should be(newRepoId)
+
+    }
+
+    "Throw an exception if the expected repo is not found in a search" in {
+
+      val newRepoName = "new-repo"
+      val searchResponse =
+        s"""
+           |[
+           |{"id":6844012,"slug":"hmrc/nisp"}
+           |]
+         """.stripMargin
+
+      val expectedUrl = new URL(urls.searchForRepo(newRepoName).toString)
+
+      givenTravisExpects(
+        method = GET,
+        url = expectedUrl,
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
+        willRespondWith = (200, Some(searchResponse)))
+
+      printMappings()
+
+      a[TravisSearchException] should be thrownBy travisConnector.searchForRepo(accessToken, newRepoName).await
+
+    }
+
+    "Throw a requestexception if search fails" in {
+
+      val newRepoName = "new-repo"
+
+      givenTravisExpects(
+        method = POST,
+        url = new URL(urls.searchForRepo(newRepoName).toString),
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
+        willRespondWith = (500, None))
+
+      a [RequestException] should be thrownBy travisConnector.searchForRepo(accessToken, newRepoName).await
+
+    }
+
   }
 
 }

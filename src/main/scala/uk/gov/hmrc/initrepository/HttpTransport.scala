@@ -36,16 +36,31 @@ trait HttpTransport {
     Log.debug("closing http client")
   }
 
+  private def expandQueryParam(param: String) = {
+    val pair = param.split("=")
+    pair.head -> pair.last
+  }
+
+  private def applyBody(body:Option[JsValue])(req: WSRequest): WSRequest =
+    body.map { b => req.withBody(b) }.getOrElse(req)
+
+  private def applyQueryParams(url: URL)(req: WSRequest): WSRequest = {
+    Option(url.getQuery) match {
+      case Some(query: String) => req.withQueryString(query.split("&") map expandQueryParam: _*)
+      case _ => req
+    }
+  }
+
   def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequest={
-    val req = ws.url(url.toString)
+    val urlWithoutQuery = url.toString.split('?').head
+    val req = ws.url(urlWithoutQuery)
       .withMethod(method)
       .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
 
-    Log.debug("req = " + req)
-
-    body.map { b =>
-      req.withBody(b)
-    }.getOrElse(req)
+    Function.chain(Seq(
+      applyBody(body) _,
+      applyQueryParams(url) _
+    ))(req)
   }
 
   def postJsonString(url:URL, body:String): Future[String] = {

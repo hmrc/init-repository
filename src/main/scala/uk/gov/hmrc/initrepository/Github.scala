@@ -40,11 +40,6 @@ class GithubUrls( orgName:String = "hmrc",
     new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName?permission=push")
 }
 
-class RequestException(request:WSRequest, response:WSResponse)
-  extends Exception(s"Got status ${response.status}: ${request.method} ${request.url} ${response.body}"){
-
-}
-
 trait Github {
 
   def httpTransport:HttpTransport
