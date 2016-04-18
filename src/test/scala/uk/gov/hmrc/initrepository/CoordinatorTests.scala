@@ -86,3 +86,4 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
     }
   }
 }
+

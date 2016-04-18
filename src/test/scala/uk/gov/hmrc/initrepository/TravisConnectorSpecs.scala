@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.initrepository
 
-import java.net.URL
-
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
 import uk.gov.hmrc.initrepository.wiremock.{TravisWireMocks, WireMockEndpoints}
@@ -42,21 +40,24 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
     "Return an access token given a valid github api key" in {
 
       givenTravisExpects(
-        method = GET,
-        url = new URL(urls.githubAuthentication.toString),
+        method = POST,
+        url = urls.githubAuthentication,
         payload = Some(s"""{"github_token":"$gitHubKey"}"""),
         willRespondWith = (200, Some("""{"access_token":"xxxxxxx"}""")))
+
+      printMappings()
 
       val result = travisConnector.authenticate.await
       result.accessToken should be("xxxxxxx")
 
+      //verifyNoAuthHeader(urls.githubAuthentication)
     }
 
     "Throw a requestexception if authentication receives a status other than 200" in {
 
       givenTravisExpects(
-        method = GET,
-        url = new URL(urls.githubAuthentication.toString),
+        method = POST,
+        url = urls.githubAuthentication,
         payload = Some(s"""{"github_token":"$gitHubKey"}"""),
         willRespondWith = (500, None))
 
@@ -68,19 +69,20 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       givenTravisExpects(
         method = POST,
-        url = new URL(urls.syncWithGithub.toString),
+        url = urls.syncWithGithub,
         extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (200, None))
 
       travisConnector.syncWithGithub(accessToken).await
 
+      //verifyNoAuthHeader(urls.syncWithGithub)
     }
 
     "Throw a requestexception if sync fails" in {
 
       givenTravisExpects(
         method = POST,
-        url = new URL(urls.syncWithGithub.toString),
+        url = urls.syncWithGithub,
         extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (500, None))
 
@@ -94,14 +96,14 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
       val newRepoId = 6969931
 
       val searchResponse =
-        s"""
+        s"""{"repos":
            |[
            |{"id":$newRepoId,"slug":"hmrc/$newRepoName"},
            |{"id":6844012,"slug":"hmrc/nisp"}
            |]
-         """.stripMargin
+         }""".stripMargin
 
-      val expectedUrl = new URL(urls.searchForRepo(newRepoName).toString)
+      val expectedUrl = urls.searchForRepo(newRepoName)
 
       givenTravisExpects(
         method = GET,
@@ -114,6 +116,7 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
       val actualNewRepoId = travisConnector.searchForRepo(accessToken, newRepoName).await
       actualNewRepoId should be(newRepoId)
 
+      //verifyNoAuthHeader(expectedUrl)
     }
 
     "Throw an exception if the expected repo is not found in a search" in {
@@ -126,7 +129,7 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
            |]
          """.stripMargin
 
-      val expectedUrl = new URL(urls.searchForRepo(newRepoName).toString)
+      val expectedUrl = urls.searchForRepo(newRepoName)
 
       givenTravisExpects(
         method = GET,
@@ -146,7 +149,7 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       givenTravisExpects(
         method = POST,
-        url = new URL(urls.searchForRepo(newRepoName).toString),
+        url = urls.searchForRepo(newRepoName),
         extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (500, None))
 
@@ -161,7 +164,7 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       givenTravisExpects(
         method = PUT,
-        url = new URL(urls.activateHook.toString),
+        url = urls.activateHook,
         payload = Some(payload),
         extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (200, None))
@@ -170,6 +173,7 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       travisConnector.activateHook(accessToken, newRepoId).await
 
+      //verifyNoAuthHeader(urls.activateHook)
     }
 
     "Throw a requestexception if hook activation fails" in {
@@ -179,7 +183,7 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       givenTravisExpects(
         method = PUT,
-        url = new URL(urls.activateHook.toString),
+        url = urls.activateHook,
         payload = Some(payload),
         extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (500, None))

@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.initrepository
 
-import java.nio.file.{Path, Files}
+import java.nio.file.Files
 
-import uk.gov.hmrc.initrepository.bintray.{Bintray, BintrayService}
-import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 import org.apache.commons.io.FileUtils
 import org.scalatest.{Matchers, OptionValues, WordSpec}
+import uk.gov.hmrc.initrepository.bintray.{Bintray, BintrayService}
+import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 
 import scala.concurrent.Future
 

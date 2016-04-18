@@ -24,12 +24,10 @@ import scala.io.Source
 
 case class ServiceCredentials(user:String, pass:String)
 
-
 object CredentialsFinder {
 
   def findGithubCredsInFile(file:Path):Option[ServiceCredentials] = {
     val conf = new ConfigFile(file)
-
     conf.get("token") map { t => ServiceCredentials("token", t)}
   }
 

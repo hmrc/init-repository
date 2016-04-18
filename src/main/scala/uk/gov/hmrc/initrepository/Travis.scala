@@ -31,7 +31,7 @@ trait TravisConnector {
   def travisUrls : TravisUrls
 
   def authenticate: Future[TravisAuthenticationResult] = {
-    val req = get(
+    val req = post(
       travisUrls.githubAuthentication,
       Some(Json.obj("github_token" -> httpTransport.creds.pass)))
 
@@ -82,7 +82,7 @@ trait TravisConnector {
   private def extractSearchResults(res: WSResponse, repositoryName: String) : Option[SearchForRepositoryResult] = {
     import SearchForRepositoryResult._
 
-    res.json.asOpt[Seq[SearchForRepositoryResult]] match {
+    (res.json \ "repos").asOpt[Seq[SearchForRepositoryResult]] match {
       case Some(results) =>
         results.find(r => r.slug == s"hmrc/$repositoryName")
       case _ =>
@@ -106,7 +106,7 @@ trait TravisConnector {
 
 }
 
-class TravisUrls(apiRoot:String = "https://api.github.com"){
+class TravisUrls(apiRoot:String = "https://api.travis-ci.org"){
   def githubAuthentication: URL = new URL(s"$apiRoot/auth/github")
   def syncWithGithub: URL = new URL(s"$apiRoot/users/sync")
   def searchForRepo(newRepoName: String) = new URL(s"$apiRoot/repos/hmrc?search=$newRepoName")
