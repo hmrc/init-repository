@@ -29,7 +29,6 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
   type PreConditionError[T] = Option[T]
 
   def run(newRepoName: String, team: String, repositoryType: RepositoryType): Future[Unit] = {
-
     checkPreConditions(newRepoName, team).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
@@ -48,7 +47,7 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
     }
   }
 
-  def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType): Future[String] =
+  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType): Future[String] =
     for {
       teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName)
@@ -56,13 +55,13 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
       _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType))
     } yield repoUrl
 
-  def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {
+  private def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {
     teamIdO.map { teamId =>
       github.addRepoToTeam(repoName, teamIdO.get)
     }.getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
   }
 
-  def tryToFuture[A](t: => Try[A]): Future[A] = {
+  private def tryToFuture[A](t: => Try[A]): Future[A] = {
     Future {
       t
     }.flatMap {
@@ -71,8 +70,7 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
     }
   }
 
-
-  def checkPreConditions(newRepoName: String, team: String): Future[PreConditionError[String]] = {
+  private def checkPreConditions(newRepoName: String, team: String): Future[PreConditionError[String]] = {
     for (repoExists <- github.containsRepo(newRepoName);
          existingPackages <- bintray.reposContainingPackage(newRepoName);
          teamExists <- github.teamId(team).map(_.isDefined))
@@ -83,5 +81,4 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
         else None
       }
   }
-
 }
