@@ -106,7 +106,7 @@ trait Github {
     val url = githubUrls.createRepo
     httpTransport.buildJsonCallWithAuth("POST", url, Some(Json.parse(payload))).execute().flatMap { case result =>
       result.status match {
-        case s if s >= 200 && s < 300 => Future.successful(result.body)
+        case s if s >= 200 && s < 300 => Future.successful(s"git@github.com:hmrc/$repoName.git")
         case _@e => Future.failed(new scala.Exception(
           s"Didn't get expected status code when writing to ${url}. Got status ${result.status}: POST ${url} ${result.body}"))
       }
