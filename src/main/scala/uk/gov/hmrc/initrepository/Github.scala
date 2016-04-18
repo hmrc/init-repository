@@ -103,7 +103,14 @@ trait Github {
                     |    "license_template": "apache-2.0"
                     |}""".stripMargin
 
-      httpTransport.postJsonString(githubUrls.createRepo, payload).map { _ => s"git@github.com:hmrc/$repoName.git" }
+    val url = githubUrls.createRepo
+    httpTransport.buildJsonCallWithAuth("POST", url, Some(Json.parse(payload))).execute().flatMap { case result =>
+      result.status match {
+        case s if s >= 200 && s < 300 => Future.successful(result.body)
+        case _@e => Future.failed(new scala.Exception(
+          s"Didn't get expected status code when writing to ${url}. Got status ${result.status}: POST ${url} ${result.body}"))
+      }
+    }
   }
 
   def close() = httpTransport.close()

@@ -65,13 +65,4 @@ trait HttpTransport {
   def buildJsonCallWithAuth(method:String, url:URL, body:Option[JsValue] = None): WSRequest =
     buildJsonCall(method, url, body).withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
 
-  def postJsonString(url:URL, body:String): Future[String] = {
-    buildJsonCall("POST", url, Some(Json.parse(body))).execute().flatMap { case result =>
-      result.status match {
-        case s if s >= 200 && s < 300 => Future.successful(result.body)
-        case _@e => Future.failed(new scala.Exception(s"Didn't get expected status code when writing to ${url}. Got status ${result.status}: POST ${url} ${result.body}"))
-      }
-    }
-  }
-
 }
