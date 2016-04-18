@@ -51,18 +51,6 @@ trait TravisConnector {
     }}
   }
 
-  def extractSearchResults(res: WSResponse, repositoryName: String) : Option[SearchForRepositoryResult] = {
-    import SearchForRepositoryResult._
-
-    res.json.asOpt[Seq[SearchForRepositoryResult]] match {
-      case Some(results) =>
-        results.find(r => r.slug == s"hmrc/$repositoryName")
-      case _ =>
-        Log.debug("Could not parse json response from travis repository search")
-        None
-    }
-  }
-
   def searchForRepo(accessToken: String, repositoryName: String) : Future[Int] = {
     val req = get(travisUrls.searchForRepo(repositoryName))
       .withHeaders("Authorization" -> s"token $accessToken")
@@ -89,6 +77,18 @@ trait TravisConnector {
       case 200 => Future.successful(Unit)
       case _   => Future.failed(new RequestException(req, res))
     }}
+  }
+
+  private def extractSearchResults(res: WSResponse, repositoryName: String) : Option[SearchForRepositoryResult] = {
+    import SearchForRepositoryResult._
+
+    res.json.asOpt[Seq[SearchForRepositoryResult]] match {
+      case Some(results) =>
+        results.find(r => r.slug == s"hmrc/$repositoryName")
+      case _ =>
+        Log.debug("Could not parse json response from travis repository search")
+        None
+    }
   }
 
   private def get(url: URL, body:Option[JsValue] = None) =

@@ -24,7 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService) {
+class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService, travis: TravisConnector) {
 
   type PreConditionError[T] = Option[T]
 
@@ -35,8 +35,9 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
 
         for {
           repoUrl <- initGitRepo(newRepoName, team, repositoryType)
-          result <- bintray.createPackagesFor(newRepoName).map(_ => repoUrl)
-        } yield result
+          _ <- bintray.createPackagesFor(newRepoName)
+          _ <- initTravis(newRepoName)
+        } yield repoUrl
 
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
@@ -59,6 +60,15 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService)
     teamIdO.map { teamId =>
       github.addRepoToTeam(repoName, teamIdO.get)
     }.getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
+  }
+
+  private def initTravis(newRepoName: String): Future[Unit] = {
+    for {
+      authentication <- travis.authenticate
+      _ <- travis.syncWithGithub(authentication.accessToken)
+      newRepoId <- travis.searchForRepo(authentication.accessToken, newRepoName)
+      _ <- travis.activateHook(authentication.accessToken, newRepoId)
+    } yield Unit
   }
 
   private def tryToFuture[A](t: => Try[A]): Future[A] = {

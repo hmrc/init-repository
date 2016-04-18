@@ -37,31 +37,51 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       val github = mock[Github]
       val bintray = mock[BintrayService]
       val git = mock[LocalGitService]
+      val travis = mock[TravisConnector]
+
+      val repoName = "newrepo"
+      val repoId = 2364862
+      val teamName: String = "teamname"
+      val repoUrl = "repo-url"
 
       // setup pre-conditions
-      when(github.teamId("teamname")) thenReturn Future.successful(Some(1))
-      when(github.containsRepo("newrepo")) thenReturn FutureFalse
-      when(bintray.reposContainingPackage("newrepo")) thenReturn Future.successful(Set[String]())
+      when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+      when(github.containsRepo(repoName)) thenReturn FutureFalse
+      when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
-      when(github.createRepo("newrepo")) thenReturn Future.successful("repo-url")
-      when(bintray.createPackagesFor("newrepo")) thenReturn Future.successful()
-      when(github.addRepoToTeam("newrepo", 1)) thenReturn Future.successful()
+      when(github.createRepo(repoName)) thenReturn Future.successful(repoUrl)
+      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
+      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository("repo-url", RepositoryType.Sbt)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt)) thenReturn Success()
 
-      new Coordinator(github, bintray, git).run("newrepo", "teamname", RepositoryType.Sbt).await
+      // setup travis calls
+      val accessToken = "access_token"
+
+      when(travis.authenticate) thenReturn Future.successful(new TravisAuthenticationResult(accessToken))
+      when(travis.syncWithGithub(accessToken)) thenReturn Future.successful()
+      when(travis.searchForRepo(accessToken, repoName)) thenReturn Future.successful(repoId)
+      when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
+
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt).await
 
       // verify pre-conditions
-      verify(github).containsRepo("newrepo")
-      verify(github, atLeastOnce()).teamId("teamname")
-      verify(bintray).reposContainingPackage("newrepo")
+      verify(github).containsRepo(repoName)
+      verify(github, atLeastOnce()).teamId(teamName)
+      verify(bintray).reposContainingPackage(repoName)
 
       // verify repo creation calls
-      verify(github).createRepo("newrepo")
-      verify(bintray).createPackagesFor("newrepo")
-      verify(github).addRepoToTeam("newrepo", 1)
+      verify(github).createRepo(repoName)
+      verify(bintray).createPackagesFor(repoName)
+      verify(github).addRepoToTeam(repoName, 1)
+
+      // verify travis setup
+      verify(travis).authenticate
+      verify(travis).syncWithGithub(accessToken)
+      verify(travis).searchForRepo(accessToken, repoName)
+      verify(travis).activateHook(accessToken, repoId)
 
     }
   }

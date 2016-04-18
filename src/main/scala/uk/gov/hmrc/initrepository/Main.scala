@@ -62,7 +62,6 @@ object Main {
   }
 
   def buildBintrayService(repositoryType:RepositoryType) = new BintrayService {
-
     override val bintray = new Bintray {
       override val http: BintrayHttp = new BintrayHttp {
         override val creds: ServiceCredentials = findBintrayCreds()
@@ -74,17 +73,21 @@ object Main {
     override val repositories: Set[String] = BintrayConfig(repositoryType)
   }
 
+  lazy val transport = new HttpTransport {
+    override val creds: ServiceCredentials = findGithubCreds()
+  }
+
   def buildGithub() = new Github{
-
-    override val httpTransport: HttpTransport = new HttpTransport {
-      override val creds: ServiceCredentials = findGithubCreds()
-    }
-
-    override val githubUrls: GithubUrls =  new GithubUrls()
+    override val httpTransport: HttpTransport = transport
+    override val githubUrls: GithubUrls = new GithubUrls()
   }
 
   def git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
 
+  def travis = new TravisConnector {
+    override def httpTransport: HttpTransport = transport
+    override def travisUrls: TravisUrls = new TravisUrls()
+  }
 
   def main(args: Array[String]) {
 
@@ -105,7 +108,7 @@ object Main {
     val bintray = buildBintrayService(repositoryType)
 
     try {
-      val result = new Coordinator(github, bintray, git)
+      val result = new Coordinator(github, bintray, git, travis)
         .run(newRepoName, team, repositoryType)
 
       Await.result(result, Duration(60, TimeUnit.SECONDS))

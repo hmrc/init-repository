@@ -33,28 +33,19 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
     "result in a tag being pushed to a local git repository" in {
 
       val github = new Github {
-
         override def httpTransport: HttpTransport = ???
-
         override def githubUrls: GithubUrls = ???
-
-        override def createRepo(repoName: String): Future[String] = Future.successful(s"${bareOriginGitStoreDir.toString}/$repoName")
-
+        override def createRepo(repoName: String): Future[String] =
+          Future.successful(s"${bareOriginGitStoreDir.toString}/$repoName")
         override def containsRepo(repoName: String): Future[Boolean] = Future.successful(false)
-
         override def teamId(team: String): Future[Option[Int]] = Future.successful(Some(1))
-
         override def addRepoToTeam(repoName: String, teamId: Int): Future[Unit] = Future.successful(Unit)
       }
 
       val bintray = new BintrayService {
-
         override def createPackagesFor(newPackageName:String):Future[Unit]= Future.successful(true)
-
         override def reposContainingPackage(newPackageName:String):Future[Set[String]]=Future.successful(Set())
-
         override lazy val repositories: Set[String] = ???
-
         override def bintray: Bintray = ???
       }
 
@@ -64,11 +55,20 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
         new LocalGitService(localGitStore)
       }
 
-      val newRepoName = "test-repos"
+      val travis = new TravisConnector {
+        override def httpTransport: HttpTransport = ???
+        override def travisUrls: TravisUrls = ???
 
+        override def authenticate: Future[TravisAuthenticationResult] = Future.successful(new TravisAuthenticationResult("access_token"))
+        override def syncWithGithub(accessToken: String): Future[Unit] = Future.successful()
+        override def searchForRepo(accessToken: String, repositoryName: String) : Future[Int] = Future.successful(123456)
+        override def activateHook(accessToken: String, repositoryId: Int): Future[Unit] = Future.successful()
+      }
+
+      val newRepoName = "test-repos"
       val origin = createOriginWithOneCommit(newRepoName)
 
-      val coord = new Coordinator(github, bintray, git)
+      val coord = new Coordinator(github, bintray, git, travis)
       coord.run(newRepoName, team = "un-used-in-this", RepositoryType.SbtPlugin).await
 
       origin.lastTag(newRepoName).get.value shouldBe "v0.1.0"
@@ -80,7 +80,6 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       createACommit(bareOriginGitStoreDir.resolve(newRepoName).toString, newRepoName)
       bareOriginGitStore
     }
-
 
     def createACommit(bareRepoUrl:String, newRepoName:String): Unit ={
       val gitStore = Files.createTempDirectory("temporary-git-dir")
