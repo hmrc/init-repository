@@ -55,13 +55,15 @@ trait HttpTransport {
     val urlWithoutQuery = url.toString.split('?').head
     val req = ws.url(urlWithoutQuery)
       .withMethod(method)
-      .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
 
     Function.chain(Seq(
       applyBody(body) _,
       applyQueryParams(url) _
     ))(req)
   }
+
+  def buildJsonCallWithAuth(method:String, url:URL, body:Option[JsValue] = None): WSRequest =
+    buildJsonCall(method, url, body).withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
 
   def postJsonString(url:URL, body:String): Future[String] = {
     buildJsonCall("POST", url, Some(Json.parse(body))).execute().flatMap { case result =>

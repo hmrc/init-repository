@@ -49,8 +49,7 @@ trait Github {
   val IronManApplication = "application/vnd.github.ironman-preview+json"
 
   def teamId(team: String): Future[Option[Int]]={
-    val req = httpTransport.buildJsonCall("GET", githubUrls.teams)
-
+    val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.teams)
 
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(findIdForName(res.json, team))
@@ -62,7 +61,7 @@ trait Github {
     Log.info(s"Adding $repoName to team ${teamId}")
 
     val req = httpTransport
-      .buildJsonCall("PUT", githubUrls.addTeamToRepo(repoName, teamId))
+      .buildJsonCallWithAuth("PUT", githubUrls.addTeamToRepo(repoName, teamId))
       .withHeaders("Accept" -> IronManApplication)
       .withHeaders("Content-Length" -> "0")
       .withBody("""{"permission": "push"}"""")
@@ -82,7 +81,7 @@ trait Github {
 
 
   def containsRepo(repoName: String): Future[Boolean] = {
-    val req = httpTransport.buildJsonCall("GET", githubUrls.containsRepo(repoName))
+    val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.containsRepo(repoName))
 
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(true)
