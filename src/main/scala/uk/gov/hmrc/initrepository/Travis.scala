@@ -79,11 +79,26 @@ trait TravisConnector {
     }
   }
 
+  def activateHook(accessToken: String, repositoryId: Int): Future[Unit] = {
+    val req = put(
+      travisUrls.activateHook,
+      Some(Json.obj("hook" -> Json.obj("id" -> repositoryId, "active" -> true))))
+      .withHeaders("Authorization" -> s"token $accessToken")
+
+    req.execute().flatMap { res => res.status match {
+      case 200 => Future.successful(Unit)
+      case _   => Future.failed(new RequestException(req, res))
+    }}
+  }
+
   private def get(url: URL, body:Option[JsValue] = None) =
    httpTransport.buildJsonCall("GET", url, body).withHeaders(standardHeaders: _*)
 
   private def post(url: URL, body:Option[JsValue] = None) =
     httpTransport.buildJsonCall("POST", url, body).withHeaders(standardHeaders: _*)
+
+  private def put(url: URL, body:Option[JsValue] = None) =
+    httpTransport.buildJsonCall("PUT", url, body).withHeaders(standardHeaders: _*)
 
   private val standardHeaders = Seq(
     "User-Agent" -> "Travis/1.0",
@@ -95,6 +110,7 @@ class TravisUrls(apiRoot:String = "https://api.github.com"){
   def githubAuthentication: URL = new URL(s"$apiRoot/auth/github")
   def syncWithGithub: URL = new URL(s"$apiRoot/users/sync")
   def searchForRepo(newRepoName: String) = new URL(s"$apiRoot/repos/hmrc?search=$newRepoName")
+  def activateHook = new URL(s"$apiRoot/hooks")
 }
 
 case class TravisAuthenticationResult(accessToken: String)

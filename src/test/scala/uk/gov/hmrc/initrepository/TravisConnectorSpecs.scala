@@ -154,6 +154,40 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
     }
 
+    "Return unit on successful hook activation request" in {
+
+      val newRepoId = 6969931
+      val payload = s"""{"hook":{"id":$newRepoId, "active":true}}"""
+
+      givenTravisExpects(
+        method = PUT,
+        url = new URL(urls.activateHook.toString),
+        payload = Some(payload),
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
+        willRespondWith = (200, None))
+
+      printMappings()
+
+      travisConnector.activateHook(accessToken, newRepoId).await
+
+    }
+
+    "Throw a requestexception if hook activation fails" in {
+
+      val newRepoId = 6969931
+      val payload = s"""{"hook":{"id":$newRepoId, "active":true}}"""
+
+      givenTravisExpects(
+        method = PUT,
+        url = new URL(urls.activateHook.toString),
+        payload = Some(payload),
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
+        willRespondWith = (500, None))
+
+      a [RequestException] should be thrownBy travisConnector.activateHook(accessToken, newRepoId).await
+
+    }
+
   }
 
 }
