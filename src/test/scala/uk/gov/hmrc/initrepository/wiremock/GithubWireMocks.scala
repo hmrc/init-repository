@@ -24,12 +24,17 @@ trait GithubWireMocks {
   this: WireMockEndpoints =>
 
   def givenGitHubExpects(
-                          method:RequestMethod,
-                          url:String,
-                          extraHeaders:Map[String,String] = Map(),
-                          willRespondWith: (Int, Option[String])): Unit = {
+    method:RequestMethod,
+    url:String,
+    payload: Option[String] = None,
+    extraHeaders:Map[String,String] = Map(),
+    willRespondWith: (Int, Option[String])): Unit = {
 
-    val builder = new MappingBuilder(method, urlEqualTo(url))
+    val builder = payload.map {
+      json => new MappingBuilder(method, urlEqualTo(url))
+        .withHeader("Content-Type", equalTo("application/json; charset=utf-8"))
+        .withRequestBody(equalToJson(json))
+    }.getOrElse(new MappingBuilder(method, urlEqualTo(url)))
 
     val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
       .withStatus(willRespondWith._1)
