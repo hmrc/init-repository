@@ -50,7 +50,7 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
       val result = travisConnector.authenticate.await
       result.accessToken should be("xxxxxxx")
 
-      //verifyNoAuthHeader(urls.githubAuthentication)
+      verifyNoAuthHeader(urls.githubAuthentication)
     }
 
     "Throw a requestexception if authentication receives a status other than 200" in {
@@ -74,8 +74,6 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
         willRespondWith = (200, None))
 
       travisConnector.syncWithGithub(accessToken).await
-
-      //verifyNoAuthHeader(urls.syncWithGithub)
     }
 
     "Throw a requestexception if sync fails" in {
@@ -115,8 +113,6 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       val actualNewRepoId = travisConnector.searchForRepo(accessToken, newRepoName).await
       actualNewRepoId should be(newRepoId)
-
-      //verifyNoAuthHeader(expectedUrl)
     }
 
     "Throw an exception if the expected repo is not found in a search" in {
@@ -172,8 +168,6 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
       printMappings()
 
       travisConnector.activateHook(accessToken, newRepoId).await
-
-      //verifyNoAuthHeader(urls.activateHook)
     }
 
     "Throw a requestexception if hook activation fails" in {
@@ -189,9 +183,6 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
         willRespondWith = (500, None))
 
       a [RequestException] should be thrownBy travisConnector.activateHook(accessToken, newRepoId).await
-
     }
-
   }
-
 }

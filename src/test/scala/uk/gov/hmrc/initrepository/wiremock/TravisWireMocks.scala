@@ -51,7 +51,7 @@ trait TravisWireMocks {
   }
 
   def verifyNoAuthHeader(url: URL) =
-    endpointMock.verifyThat(putRequestedFor(urlPathEqualTo(url.getPath)).withoutHeader("Authorization"))
+    endpointMock.verifyThat(postRequestedFor(urlPathEqualTo(url.getPath)).withoutHeader("Authorization"))
 
   private def applyExtraHeaders(extraHeaders: Map[String, String])(builder: MappingBuilder) =
     extraHeaders.foldLeft(builder) { (builder, header) =>
