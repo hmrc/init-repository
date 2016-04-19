@@ -31,6 +31,8 @@ trait TravisConnector {
   def travisUrls : TravisUrls
 
   def authenticate: Future[TravisAuthenticationResult] = {
+    Log.info(s"Fetching travis access token")
+
     val req = post(
       travisUrls.githubAuthentication,
       Some(Json.obj("github_token" -> httpTransport.creds.pass)))
@@ -42,6 +44,8 @@ trait TravisConnector {
   }
 
   def syncWithGithub(accessToken: String): Future[Unit] = {
+    Log.info(s"Synchronising with github")
+
     val req = post(travisUrls.syncWithGithub)
       .withHeaders("Authorization" -> s"token $accessToken")
 
@@ -52,6 +56,8 @@ trait TravisConnector {
   }
 
   def searchForRepo(accessToken: String, repositoryName: String) : Future[Int] = {
+    Log.info(s"Attempting to locate $repositoryName in travis")
+
     val req = get(travisUrls.searchForRepo(repositoryName))
       .withHeaders("Authorization" -> s"token $accessToken")
 
@@ -68,6 +74,8 @@ trait TravisConnector {
   }
 
   def activateHook(accessToken: String, repositoryId: Int): Future[Unit] = {
+    Log.info(s"Activating travis hook")
+
     val req = put(
       travisUrls.activateHook,
       Some(Json.obj("hook" -> Json.obj("id" -> repositoryId, "active" -> true))))
