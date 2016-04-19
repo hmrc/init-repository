@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.initrepository.wiremock
 
+import java.net.URL
+
 import com.github.tomakehurst.wiremock.client.{MappingBuilder, ResponseDefinitionBuilder}
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.http.RequestMethod
@@ -25,26 +27,10 @@ trait GithubWireMocks {
 
   def givenGitHubExpects(
     method:RequestMethod,
-    url:String,
+    url:URL,
     payload: Option[String] = None,
     extraHeaders:Map[String,String] = Map(),
-    willRespondWith: (Int, Option[String])): Unit = {
+    willRespondWith: (Int, Option[String])) =
 
-    val builder = payload.map {
-      json => new MappingBuilder(method, urlEqualTo(url))
-        .withHeader("Content-Type", equalTo("application/json; charset=utf-8"))
-        .withRequestBody(equalToJson(json))
-    }.getOrElse(new MappingBuilder(method, urlEqualTo(url)))
-
-    val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
-      .withStatus(willRespondWith._1)
-
-    val resp = willRespondWith._2.map { b =>
-      response.withBody(b)
-    }.getOrElse(response)
-
-    builder.willReturn(resp)
-
-    endpointMock.register(builder)
-  }
+    expectHttp(method, url, payload, extraHeaders, willRespondWith)
 }

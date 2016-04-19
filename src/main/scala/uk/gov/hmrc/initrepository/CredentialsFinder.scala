@@ -18,11 +18,15 @@ package uk.gov.hmrc.initrepository
 
 import java.nio.file.Path
 
+import com.ning.http.util.Base64
 import play.api.Logger
 
 import scala.io.Source
 
 case class ServiceCredentials(user:String, pass:String)
+{
+  def toBasicAuth = "Basic " + Base64.encode((user + ":" + pass).getBytes())
+}
 
 object CredentialsFinder {
 

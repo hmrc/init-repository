@@ -19,7 +19,6 @@ package uk.gov.hmrc.initrepository
 import java.net.URL
 
 import play.api.libs.json._
-import play.api.libs.ws._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
