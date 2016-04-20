@@ -50,6 +50,8 @@ trait Github {
   def teamId(team: String): Future[Option[Int]]={
     val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.teams)
 
+    Log.debug(req.toString)
+
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(findIdForName(res.json, team))
       case _   => Future.failed(new RequestException(req, res))
@@ -65,6 +67,7 @@ trait Github {
       .withHeaders("Content-Length" -> "0")
       .withBody("""{"permission": "push"}"""")
 
+    Log.debug(req.toString)
 
     req.execute().flatMap { res => res.status match {
       case 204 => Future.successful(Unit)
@@ -81,6 +84,8 @@ trait Github {
 
   def containsRepo(repoName: String): Future[Boolean] = {
     val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.containsRepo(repoName))
+
+    Log.debug(req.toString)
 
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(true)
@@ -103,7 +108,11 @@ trait Github {
                     |}""".stripMargin
 
     val url = githubUrls.createRepo
-    httpTransport.buildJsonCallWithAuth("POST", url, Some(Json.parse(payload))).execute().flatMap { case result =>
+    val req = httpTransport.buildJsonCallWithAuth("POST", url, Some(Json.parse(payload)))
+
+    Log.debug(req.toString)
+
+    req.execute().flatMap { case result =>
       result.status match {
         case s if s >= 200 && s < 300 => Future.successful(s"git@github.com:hmrc/$repoName.git")
         case _@e => Future.failed(new scala.Exception(
