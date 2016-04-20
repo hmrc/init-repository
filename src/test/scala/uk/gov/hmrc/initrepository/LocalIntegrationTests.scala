@@ -61,7 +61,7 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
         override def authenticate: Future[TravisAuthenticationResult] = Future.successful(new TravisAuthenticationResult("access_token"))
         override def syncWithGithub(accessToken: String): Future[Unit] = Future.successful()
-        override def searchForRepo(accessToken: String, repositoryName: String) : Future[Int] = Future.successful(123456)
+        override def searchForRepo(accessToken: String, repositoryName: String)(implicit backoffStrategy: TravisSearchBackoffStrategy) : Future[Int] = Future.successful(123456)
         override def activateHook(accessToken: String, repositoryId: Int): Future[Unit] = Future.successful()
       }
 

@@ -19,12 +19,14 @@ package uk.gov.hmrc.initrepository
 import uk.gov.hmrc.initrepository.bintray.BintrayService
 import uk.gov.hmrc.initrepository.git.LocalGitService
 import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
 import scala.concurrent.Future
 import scala.util.Success
 
+import org.mockito.Matchers.{eq => meq}
 
 class CoordinatorTests extends WordSpec with Matchers with FutureValues with BeforeAndAfterEach with MockitoSugar {
 
@@ -60,9 +62,11 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       // setup travis calls
       val accessToken = "access_token"
 
+      implicit val backoffStrategy = TravisSearchBackoffStrategy(1, 0)
+
       when(travis.authenticate) thenReturn Future.successful(new TravisAuthenticationResult(accessToken))
       when(travis.syncWithGithub(accessToken)) thenReturn Future.successful()
-      when(travis.searchForRepo(accessToken, repoName)) thenReturn Future.successful(repoId)
+      when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
       when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
 
       new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt).await
@@ -80,7 +84,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       // verify travis setup
       verify(travis).authenticate
       verify(travis).syncWithGithub(accessToken)
-      verify(travis).searchForRepo(accessToken, repoName)
+      verify(travis).searchForRepo(meq(accessToken), meq(repoName))(any())
       verify(travis).activateHook(accessToken, repoId)
 
     }

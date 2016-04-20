@@ -63,6 +63,8 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
   }
 
   private def initTravis(newRepoName: String): Future[Unit] = {
+    implicit val backoffStrategy = TravisSearchBackoffStrategy()
+
     for {
       authentication <- travis.authenticate
       _ <- travis.syncWithGithub(authentication.accessToken)

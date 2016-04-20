@@ -18,14 +18,12 @@ package uk.gov.hmrc.initrepository
 
 import java.net.URL
 
+import com.github.tomakehurst.wiremock.client.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.client.{MappingBuilder, RequestPatternBuilder, ResponseDefinitionBuilder}
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
-import play.api.libs.json.Json
 import uk.gov.hmrc.initrepository.wiremock.{GithubWireMocks, WireMockEndpoints}
-
 
 
 class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints with GithubWireMocks {

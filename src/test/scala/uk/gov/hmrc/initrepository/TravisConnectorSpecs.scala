@@ -19,6 +19,8 @@ package uk.gov.hmrc.initrepository
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
 import uk.gov.hmrc.initrepository.wiremock.{TravisWireMocks, WireMockEndpoints}
+import scala.concurrent.duration._
+import scala.concurrent.Future
 
 class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints with TravisWireMocks {
 
@@ -111,7 +113,47 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       printMappings()
 
+      implicit val backoffStrategy = TravisSearchBackoffStrategy(1, 0)
+
       val actualNewRepoId = travisConnector.searchForRepo(accessToken, newRepoName).await
+      actualNewRepoId should be(newRepoId)
+    }
+
+    "Retry search up to 10 times if new repo is not found" in {
+      import FutureUtils._
+
+      val newRepoName = "new-repo"
+      val newRepoId = 6969931
+
+      val expectedUrl = urls.searchForRepo(newRepoName)
+      val searchResponse = s"""{"repos": [{"id":6844012,"slug":"hmrc/nisp"}] }"""
+
+      givenTravisExpects(
+        method = GET,
+        url = expectedUrl,
+        extraHeaders = Map("Authorization" -> s"token $accessToken"),
+        willRespondWith = (200, Some(searchResponse)))
+
+      printMappings()
+
+      val eventualSearchResponse =
+        s"""{"repos": [
+            |{"id":$newRepoId,"slug":"hmrc/$newRepoName"},
+            |{"id":6844012,"slug":"hmrc/nisp"}
+            |]}""".stripMargin
+
+      delay(15000) {
+        printMappings()
+        Future.successful(givenTravisExpects(
+          method = GET,
+          url = expectedUrl,
+          extraHeaders = Map("Authorization" -> s"token $accessToken"),
+          willRespondWith = (200, Some(eventualSearchResponse))))
+      }
+
+      implicit val backoffStrategy = TravisSearchBackoffStrategy()
+
+      val actualNewRepoId = travisConnector.searchForRepo(accessToken, newRepoName).await(20 seconds)
       actualNewRepoId should be(newRepoId)
     }
 
@@ -135,8 +177,8 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
 
       printMappings()
 
+      implicit val backoffStrategy = TravisSearchBackoffStrategy(1, 0)
       a[TravisSearchException] should be thrownBy travisConnector.searchForRepo(accessToken, newRepoName).await
-
     }
 
     "Throw a requestexception if search fails" in {
@@ -149,8 +191,10 @@ class TravisConnectorSpecs extends WordSpec with Matchers with FutureValues with
         extraHeaders = Map("Authorization" -> s"token $accessToken"),
         willRespondWith = (500, None))
 
-      a [RequestException] should be thrownBy travisConnector.searchForRepo(accessToken, newRepoName).await
+      printMappings()
 
+      implicit val backoffStrategy = TravisSearchBackoffStrategy(1, 0)
+      a [RequestException] should be thrownBy travisConnector.searchForRepo(accessToken, newRepoName).await
     }
 
     "Return unit on successful hook activation request" in {

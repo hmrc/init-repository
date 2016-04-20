@@ -41,9 +41,12 @@ trait FutureValues {
       assert(future.value.get.isFailure, s"Future was success, value was ${future.value}")
     }
 
-
     def await:T = {
       Await.result(future, defaultTimeout)
+    }
+
+    def await(timeout: Duration):T = {
+      Await.result(future, timeout)
     }
 
     def awaitSuccessOrThrow(): Unit = {

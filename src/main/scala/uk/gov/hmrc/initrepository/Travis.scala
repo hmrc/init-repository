@@ -17,12 +17,14 @@
 package uk.gov.hmrc.initrepository
 
 import java.net.URL
+import java.util.{Timer, TimerTask}
 
-import play.api.libs.json.{JsValue, Json, Format}
+import play.api.libs.json.{Format, JsValue, Json}
 import play.api.libs.ws.WSResponse
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
 trait TravisConnector {
 
@@ -55,20 +57,24 @@ trait TravisConnector {
     }}
   }
 
-  def searchForRepo(accessToken: String, repositoryName: String) : Future[Int] = {
+  def searchForRepo(accessToken: String, repositoryName: String)(implicit backoffStrategy: TravisSearchBackoffStrategy) : Future[Int] = {
+    import FutureUtils._
+
     Log.info(s"Attempting to locate $repositoryName in travis")
 
     val req = get(travisUrls.searchForRepo(repositoryName))
       .withHeaders("Authorization" -> s"token $accessToken")
 
-    req.execute().flatMap { res =>
-      res.status match {
-        case 200 =>
-          extractSearchResults(res, repositoryName) match {
-            case Some(r) => Future.successful(r.id)
-            case _ => Future.failed(new TravisSearchException(repositoryName))
-          }
-        case _   => Future.failed(new RequestException(req, res))
+    exponentialRetry(backoffStrategy.retries, backoffStrategy.initialDuration) {
+      req.execute().flatMap { res =>
+        res.status match {
+          case 200 =>
+            extractSearchResults(res, repositoryName) match {
+              case Some(r) => Future.successful(r.id)
+              case _ => Future.failed(new TravisSearchException(repositoryName))
+            }
+          case _ => Future.failed(new RequestException(req, res))
+        }
       }
     }
   }
@@ -124,6 +130,8 @@ class TravisUrls(apiRoot:String = "https://api.travis-ci.org"){
 case class TravisAuthenticationResult(accessToken: String)
 
 case class SearchForRepositoryResult(id: Int, slug: String)
+
+case class TravisSearchBackoffStrategy(retries: Int = 10, initialDuration: Double = 150)
 
 object SearchForRepositoryResult {
   implicit val jsonFormat: Format[SearchForRepositoryResult] = Json.format[SearchForRepositoryResult]
