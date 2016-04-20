@@ -110,7 +110,7 @@ object Main {
       val result = new Coordinator(github, bintray, git, travis)
         .run(newRepoName, team, repositoryType)
 
-      Await.result(result, Duration(60, TimeUnit.SECONDS))
+      Await.result(result, Duration(120, TimeUnit.SECONDS))
     } finally {
       github.close()
       bintray.close()
