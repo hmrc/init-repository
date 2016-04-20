@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.initrepository.bintray
 
+import java.net.URL
+
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.client.{MappingBuilder, RequestPatternBuilder, ResponseDefinitionBuilder}
 import com.github.tomakehurst.wiremock.http.RequestMethod
@@ -27,22 +29,24 @@ import uk.gov.hmrc.initrepository.wiremock.WireMockEndpoints
 
 class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {
 
-  class FakeBintrayHttp extends BintrayHttp {
+  class FakeBintrayHttp extends HttpTransport {
     override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
+  val bintrayUrls = new BintrayUrls(apiRoot = endpointMockUrl)
+
   val bintray = new Bintray{
-    override def http: BintrayHttp = new FakeBintrayHttp
-    override def urls: BintrayUrls = new BintrayUrls(apiRoot = endpointMockUrl)
+    override def http: HttpTransport = new FakeBintrayHttp
+    override def urls: BintrayUrls = bintrayUrls
   }
   
   "Bintray.containsPackage" should {
 
     "return true when bintray returns 200" in {
 
-      givenServerExpects(
+      expectHttp(
         method = GET,
-        url = "/packages/hmrc/releases/domain",
+        url = bintrayUrls.containsPackage("releases", "domain"),
         willRespondWith = (200, None)
       )
 
@@ -52,9 +56,9 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
 
     "return false when bintray returns 404" in {
 
-      givenServerExpects(
+      expectHttp(
         method = GET,
-        url = "/packages/hmrc/releases/domain",
+        url = bintrayUrls.containsPackage("releases", "domain"),
         willRespondWith = (404, None)
       )
 
@@ -63,32 +67,34 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
 
     "return false when bintray returns anything other than 200 or 404" in {
 
-      givenServerExpects(
+      expectHttp(
         method = GET,
-        url = "/packages/hmrc/releases/domain",
+        url = bintrayUrls.containsPackage("releases", "domain"),
         willRespondWith = (999, None)
       )
+
       intercept[RequestException]{
         bintray.containsPackage("releases", "domain").await
       }
     }
   }
 
-  "Bintray.containsPackage" should {
+  "Bintray.createPackage" should {
+
     "create a package" in {
 
-      givenServerExpects(
+      expectHttp(
         method = POST,
-        url = "/packages/hmrc/releases",
+        url = bintrayUrls.createPackage("releases"),
         willRespondWith = (201, None)
       )
 
-      printMappings
+      printMappings()
       bintray.createPackage("releases", "domain").awaitSuccess()
 
       assertRequest(
         method = POST,
-        url = "/packages/hmrc/releases",
+        url = bintrayUrls.createPackage("releases"),
         body = Some(
           """ {
                       |    "name": "domain",
@@ -106,9 +112,9 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
     }
 
     "return future.failed when repo isn't created" in {
-      givenServerExpects(
+      expectHttp(
         method = POST,
-        url = "/packages/hmrc/releases",
+        url = bintrayUrls.createPackage("releases"),
         willRespondWith = (999, None)
       )
 
@@ -121,7 +127,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
   "BintrayConfig" should {
     "return correct repository names based on repository type" in {
       BintrayConfig.apply(RepositoryType.SbtPlugin).head should startWith("sbt")
-      BintrayConfig.apply(RepositoryType.Sbt).head should not startWith("sbt")
+      BintrayConfig.apply(RepositoryType.Sbt).head should not startWith "sbt"
     }
 
     "return the releases repository name" in {
@@ -130,34 +136,12 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
     }
   }
 
-
-  def assertRequest(method:RequestMethod, url:String, body:Option[String]): Unit ={
-    val builder = new RequestPatternBuilder(method, urlEqualTo(url))
+  def assertRequest(method:RequestMethod, url:URL, body:Option[String]): Unit ={
+    val builder = new RequestPatternBuilder(method, urlPathEqualTo(url.getPath))
     body.map{ b =>
       builder.withRequestBody(equalToJson(b))
     }.getOrElse(builder)
     endpointMock.verifyThat(builder)
   }
 
-
-  def givenServerExpects(method:RequestMethod, url:String, willRespondWith: (Int, Option[String])): Unit = {
-
-    val builder = new MappingBuilder(method, urlEqualTo(url))
-      .withHeader("Content-Type", equalTo("application/json"))
-
-    val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
-      .withStatus(willRespondWith._1)
-
-    val resp = willRespondWith._2.map { b =>
-      response.withBody(b)
-    }.getOrElse(response)
-
-    willRespondWith._2.map { b =>
-      builder.withRequestBody(equalToJson(b))
-    }.getOrElse(builder)
-
-    builder.willReturn(resp)
-
-    endpointMock.register(builder)
-  }
 }

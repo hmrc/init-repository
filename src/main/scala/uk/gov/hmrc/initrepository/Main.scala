@@ -41,7 +41,7 @@ object Main {
   def findGithubCreds(): ServiceCredentials = {
     val githubCredsFile = System.getProperty("user.home") + "/.github/.credentials"
     val githubCredsOpt = CredentialsFinder.findGithubCredsInFile(new File(githubCredsFile).toPath)
-    val creds = githubCredsOpt.getOrElse(throw new scala.IllegalArgumentException(s"Did not find valid Github credentials in ${githubCredsFile}"))
+    val creds = githubCredsOpt.getOrElse(throw new scala.IllegalArgumentException(s"Did not find valid Github credentials in $githubCredsFile"))
 
     Log.debug(s"github client_id ${creds.user}")
     Log.debug(s"github client_secret ${creds.pass.takeRight(3)}*******")
@@ -53,7 +53,7 @@ object Main {
     val bintrayCredsFile = System.getProperty("user.home") + "/.bintray/.credentials"
     val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
 
-    val creds = bintrayCredsOpt.getOrElse(throw new IllegalArgumentException(s"Did not find valid Bintray credentials in ${bintrayCredsFile}"))
+    val creds = bintrayCredsOpt.getOrElse(throw new IllegalArgumentException(s"Did not find valid Bintray credentials in $bintrayCredsFile"))
 
     Log.debug(s"bintrayCredsOpt client_id ${creds.user}")
     Log.debug(s"bintrayCredsOpt client_secret ${creds.pass.takeRight(3)}*******")
@@ -61,36 +61,36 @@ object Main {
     creds
   }
 
-  def buildBintrayService(repositoryType:RepositoryType) = new BintrayService {
-    override val bintray = new Bintray {
-      override val http: BintrayHttp = new BintrayHttp {
-        override val creds: ServiceCredentials = findBintrayCreds()
-      }
-
-      override val urls: BintrayUrls = new BintrayUrls()
-    }
-
-    override val repositories: Set[String] = BintrayConfig(repositoryType)
+  lazy val bintrayTransport = new HttpTransport {
+    override val creds: ServiceCredentials = findBintrayCreds()
   }
 
   lazy val transport = new HttpTransport {
     override val creds: ServiceCredentials = findGithubCreds()
   }
 
+  def buildBintrayService(repositoryType:RepositoryType) = new BintrayService {
+    override val bintray = new Bintray {
+      override val http: HttpTransport = bintrayTransport
+      override val urls: BintrayUrls = new BintrayUrls()
+    }
+
+    override val repositories: Set[String] = BintrayConfig(repositoryType)
+  }
+
   def buildGithub() = new Github{
-    override val httpTransport: HttpTransport = transport
+    override val httpTransport: HttpTransport = bintrayTransport
     override val githubUrls: GithubUrls = new GithubUrls()
   }
 
   def git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
 
   def travis = new TravisConnector {
-    override def httpTransport: HttpTransport = transport
+    override def httpTransport: HttpTransport = bintrayTransport
     override def travisUrls: TravisUrls = new TravisUrls()
   }
 
   def main(args: Array[String]) {
-
       ArgParser.parser.parse(args, Config()) foreach { config =>
         val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
         if(config.verbose) {
@@ -103,7 +103,6 @@ object Main {
   }
 
   def start(newRepoName: String, team: String, repositoryType:RepositoryType): Unit = {
-
     val github = buildGithub()
     val bintray = buildBintrayService(repositoryType)
 

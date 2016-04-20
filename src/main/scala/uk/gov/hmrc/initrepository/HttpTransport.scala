@@ -18,12 +18,9 @@ package uk.gov.hmrc.initrepository
 
 import java.net.URL
 
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient, NingWSClientConfig}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 trait HttpTransport {
 

@@ -24,7 +24,6 @@ trait BintrayService {
   def bintray:Bintray
   val repositories:Set[String]
 
-
   def createPackagesFor(newPackageName:String):Future[Unit]={
     Future.sequence {
       repositories.map { r =>

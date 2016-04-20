@@ -18,9 +18,10 @@ package uk.gov.hmrc.initrepository.bintray
 
 import java.net.URL
 
+import play.api.libs.json.Json
 import play.api.libs.ws._
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient}
-import uk.gov.hmrc.initrepository.{ServiceCredentials, Log, RequestException}
+import uk.gov.hmrc.initrepository.{HttpTransport, Log, RequestException, ServiceCredentials}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -36,16 +37,16 @@ class BintrayUrls(apiRoot:String = "https://bintray.com/api/v1"){
 
 trait Bintray{
 
-  def http:BintrayHttp
+  def http:HttpTransport
   def urls:BintrayUrls
 
   def createPackage(repoName: String, packageName:String) :Future[Unit]={
-    Log.info(s"creating Bintray package with name '${packageName}' in repository '${repoName}'")
+    Log.info(s"creating Bintray package with name '$packageName' in repository '$repoName'")
 
     val req = http.buildJsonCall(
       "POST",
       urls.createPackage(repoName),
-      Some(buildCreatePackageMessage(repoName, packageName))
+      Some(Json.parse(buildCreatePackageMessage(repoName, packageName)))
     )
 
     req.execute() flatMap { res => res.status match {
@@ -80,31 +81,4 @@ trait Bintray{
   }
 
   def close() = http.close()
-}
-
-
-
-trait BintrayHttp{
-
-  def creds:ServiceCredentials
-
-  private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new WSClientConfig()).build())
-
-  def close() = {
-    Log.debug("closing bintray http client")
-    ws.close()
-  }
-
-  def buildJsonCall(method:String, url:URL, body:Option[String] = None):WSRequest= {
-
-    val req = ws.url(url.toString)
-      .withMethod(method)
-      .withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
-      .withHeaders(
-        "content-type" -> "application/json")
-
-    body.map { b =>
-      req.withBody(b)
-    }.getOrElse(req)
-  }
 }

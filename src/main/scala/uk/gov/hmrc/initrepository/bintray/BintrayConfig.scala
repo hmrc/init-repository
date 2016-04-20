@@ -33,7 +33,6 @@ object BintrayConfig{
     }
   }
 
-
   def releasesRepositoryNameFor(repositoryType:RepositoryType):String={
     apply(repositoryType).head
   }
