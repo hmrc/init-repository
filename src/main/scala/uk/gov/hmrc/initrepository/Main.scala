@@ -65,7 +65,7 @@ object Main {
     override val creds: ServiceCredentials = findBintrayCreds()
   }
 
-  lazy val transport = new HttpTransport {
+  lazy val gitHubTransport = new HttpTransport {
     override val creds: ServiceCredentials = findGithubCreds()
   }
 
@@ -79,14 +79,14 @@ object Main {
   }
 
   def buildGithub() = new Github{
-    override val httpTransport: HttpTransport = bintrayTransport
+    override val httpTransport: HttpTransport = gitHubTransport
     override val githubUrls: GithubUrls = new GithubUrls()
   }
 
   def git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
 
   def travis = new TravisConnector {
-    override def httpTransport: HttpTransport = bintrayTransport
+    override def httpTransport: HttpTransport = gitHubTransport
     override def travisUrls: TravisUrls = new TravisUrls()
   }
 
