@@ -29,17 +29,16 @@ import uk.gov.hmrc.initrepository.wiremock.WireMockEndpoints
 
 class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints {
 
-  class FakeBintrayHttp extends HttpTransport {
+  val transport = new HttpTransport {
     override def creds: ServiceCredentials = ServiceCredentials("", "")
   }
 
   val bintrayUrls = new BintrayUrls(apiRoot = endpointMockUrl)
-
   val bintray = new Bintray{
-    override def http: HttpTransport = new FakeBintrayHttp
+    override def http: HttpTransport = transport
     override def urls: BintrayUrls = bintrayUrls
   }
-  
+
   "Bintray.containsPackage" should {
 
     "return true when bintray returns 200" in {
@@ -47,10 +46,11 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       expectHttp(
         method = GET,
         url = bintrayUrls.containsPackage("releases", "domain"),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
         willRespondWith = (200, None)
       )
 
-      bintray.containsPackage("releases", "domain").await// shouldBe true
+      bintray.containsPackage("releases", "domain").await shouldBe true
 
     }
 
@@ -59,6 +59,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       expectHttp(
         method = GET,
         url = bintrayUrls.containsPackage("releases", "domain"),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
         willRespondWith = (404, None)
       )
 
@@ -70,6 +71,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       expectHttp(
         method = GET,
         url = bintrayUrls.containsPackage("releases", "domain"),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
         willRespondWith = (999, None)
       )
 
@@ -86,6 +88,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       expectHttp(
         method = POST,
         url = bintrayUrls.createPackage("releases"),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
         willRespondWith = (201, None)
       )
 
@@ -115,6 +118,7 @@ class BintraySpecs extends WordSpec with Matchers with FutureValues with WireMoc
       expectHttp(
         method = POST,
         url = bintrayUrls.createPackage("releases"),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
         willRespondWith = (999, None)
       )
 

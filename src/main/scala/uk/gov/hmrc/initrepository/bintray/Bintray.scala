@@ -43,7 +43,7 @@ trait Bintray{
   def createPackage(repoName: String, packageName:String) :Future[Unit]={
     Log.info(s"creating Bintray package with name '$packageName' in repository '$repoName'")
 
-    val req = http.buildJsonCall(
+    val req = http.buildJsonCallWithAuth(
       "POST",
       urls.createPackage(repoName),
       Some(Json.parse(buildCreatePackageMessage(repoName, packageName)))
@@ -71,7 +71,7 @@ trait Bintray{
   }
 
   def containsPackage(repoName: String, packageName:String): Future[Boolean] = {
-    val req = http.buildJsonCall("GET", urls.containsPackage(repoName, packageName))
+    val req = http.buildJsonCallWithAuth("GET", urls.containsPackage(repoName, packageName))
 
     req.execute() flatMap { res => res.status match {
       case 200 => Future.successful(true)
