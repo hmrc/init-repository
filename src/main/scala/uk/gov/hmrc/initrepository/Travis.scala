@@ -93,6 +93,8 @@ trait TravisConnector {
     }}
   }
 
+  def close() = httpTransport.close()
+
   private def extractSearchResults(res: WSResponse, repositoryName: String) : Option[SearchForRepositoryResult] = {
     import SearchForRepositoryResult._
 

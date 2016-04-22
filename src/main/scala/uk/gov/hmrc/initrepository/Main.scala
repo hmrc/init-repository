@@ -100,7 +100,7 @@ object Main {
 
   def git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
 
-  def travis = new TravisConnector {
+  def buildTravis = new TravisConnector {
     override def httpTransport: HttpTransport = travisTransport
     override def travisUrls: TravisUrls = new TravisUrls()
   }
@@ -120,6 +120,7 @@ object Main {
   def start(newRepoName: String, team: String, repositoryType:RepositoryType): Unit = {
     val github = buildGithub()
     val bintray = buildBintrayService(repositoryType)
+    val travis = buildTravis
 
     try {
       val result = new Coordinator(github, bintray, git, travis)
@@ -129,6 +130,7 @@ object Main {
     } finally {
       github.close()
       bintray.close()
+      travis.close()
     }
   }
 }
