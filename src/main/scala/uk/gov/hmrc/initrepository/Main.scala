@@ -49,6 +49,17 @@ object Main {
     creds
   }
 
+  def findTravisGithubCreds(): ServiceCredentials = {
+    val travisGithubCredsFile = System.getProperty("user.home") + "/.github/.traviscredentials"
+    val maybeCreds = CredentialsFinder.findGithubCredsInFile(new File(travisGithubCredsFile).toPath)
+    val creds = maybeCreds.getOrElse(throw new scala.IllegalArgumentException(s"Did not find valid Travis Github credentials in $travisGithubCredsFile"))
+
+    Log.debug(s"travis github client_id ${creds.user}")
+    Log.debug(s"travis github client_secret ${creds.pass.takeRight(3)}*******")
+
+    creds
+  }
+
   def findBintrayCreds():ServiceCredentials={
     val bintrayCredsFile = System.getProperty("user.home") + "/.bintray/.credentials"
     val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
@@ -69,6 +80,10 @@ object Main {
     override val creds: ServiceCredentials = findGithubCreds()
   }
 
+  lazy val travisTransport = new HttpTransport {
+    override val creds: ServiceCredentials = findTravisGithubCreds()
+  }
+
   def buildBintrayService(repositoryType:RepositoryType) = new BintrayService {
     override val bintray = new Bintray {
       override val http: HttpTransport = bintrayTransport
@@ -86,7 +101,7 @@ object Main {
   def git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
 
   def travis = new TravisConnector {
-    override def httpTransport: HttpTransport = gitHubTransport
+    override def httpTransport: HttpTransport = travisTransport
     override def travisUrls: TravisUrls = new TravisUrls()
   }
 
