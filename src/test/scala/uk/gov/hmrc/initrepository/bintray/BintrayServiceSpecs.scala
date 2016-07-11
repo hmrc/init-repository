@@ -64,8 +64,8 @@ class BintrayServiceSpecs extends WordSpec with Matchers with FutureValues with 
 
       val mockBintray = mock[Bintray]
 
-      when(mockBintray.createPackage("releases", "newRepo")) thenReturn Future.successful()
-      when(mockBintray.createPackage("release-candidates", "newRepo")) thenReturn Future.successful()
+      when(mockBintray.createPackage("releases", "newRepo")) thenReturn Future.successful(())
+      when(mockBintray.createPackage("release-candidates", "newRepo")) thenReturn Future.successful(())
 
       val bintrayService = new BintrayService{
         override val bintray: Bintray = mockBintray

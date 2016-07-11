@@ -113,18 +113,18 @@ object Main {
         } else {
           root.setLevel(Level.INFO)
         }
-        start(config.repoName, config.teamName, config.repoType)
+        start(config.repoName, config.teamName, config.repoType, config.bootStrapTagName )
       }
   }
 
-  def start(newRepoName: String, team: String, repositoryType:RepositoryType): Unit = {
+  def start(newRepoName: String, team: String, repositoryType:RepositoryType, bootstrapVersion :String): Unit = {
     val github = buildGithub()
     val bintray = buildBintrayService(repositoryType)
     val travis = buildTravis
 
     try {
       val result = new Coordinator(github, bintray, git, travis)
-        .run(newRepoName, team, repositoryType)
+        .run(newRepoName, team, repositoryType, bootstrapVersion)
 
       Await.result(result, Duration(120, TimeUnit.SECONDS))
     } finally {

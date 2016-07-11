@@ -69,9 +69,9 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       val origin = createOriginWithOneCommit(newRepoName)
 
       val coord = new Coordinator(github, bintray, git, travis)
-      coord.run(newRepoName, team = "un-used-in-this", RepositoryType.SbtPlugin).await
+      coord.run(newRepoName, team = "un-used-in-this", RepositoryType.SbtPlugin, "1.10.1").await
 
-      origin.lastTag(newRepoName).get.value shouldBe "v0.1.0"
+      origin.lastTag(newRepoName).get.value shouldBe "v1.10.1"
     }
 
     def createOriginWithOneCommit(newRepoName:String) = {

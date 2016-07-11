@@ -28,13 +28,13 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName: String, team: String, repositoryType: RepositoryType): Future[Unit] = {
+  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String): Future[Unit] = {
     checkPreConditions(newRepoName, team).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
 
         for {
-          repoUrl <- initGitRepo(newRepoName, team, repositoryType)
+          repoUrl <- initGitRepo(newRepoName, team, repositoryType, bootstrapVersion)
           _ <- bintray.createPackagesFor(newRepoName)
           _ <- initTravis(newRepoName)
         } yield repoUrl
@@ -48,12 +48,12 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     }
   }
 
-  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType): Future[String] =
+  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String): Future[String] =
     for {
       teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName)
       _ <- addRepoToTeam(newRepoName, teamId)
-      _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType))
+      _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion))
     } yield repoUrl
 
   private def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {

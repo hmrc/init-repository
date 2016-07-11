@@ -24,7 +24,7 @@ import scala.util.{Failure, Try}
 class LocalGitService(git: LocalGitStore) {
 
   val BootstrapTagComment = "Bootstrap tag"
-  val BootstrapTagVersion = "v0.1.0"
+  val BootstrapTagVersion: String => String = version => s"v$version"
 
   val TravisScalaVersion = "2.11.6"
   val TravisJdkVersion = "oraclejdk8"
@@ -89,24 +89,24 @@ class LocalGitService(git: LocalGitStore) {
     """.stripMargin
   }
 
-  def initialiseRepository(repoUrl: String, repositoryType:RepositoryType) : Try[Unit]={
+  def initialiseRepository(repoUrl: String, repositoryType: RepositoryType, bootstrapVersion: String): Try[Unit] = {
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
-    for(
-      _ <- git.cloneRepoURL(repoUrl);
-      _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail);
-      _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail);
-      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType), CommitUserName, CommitUserEmail);
-      shaO <- git.lastCommitSha(newRepoName);
-      _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion);
-      _ <- git.push(newRepoName);
+    for {
+      _ <- git.cloneRepoURL(repoUrl)
+      _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail)
+      _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
+      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType), CommitUserName, CommitUserEmail)
+      shaO <- git.lastCommitSha(newRepoName)
+      _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion(bootstrapVersion))
+      _ <- git.push(newRepoName)
       _ <- git.pushTags(newRepoName)
-    ) yield Unit
+    } yield Unit
   }
 
-  def maybeCreateTag(newRepoName:String, shaOpt:Option[String], tagText:String, version:String):Try[Unit]={
-    shaOpt.map{ sha =>
+  def maybeCreateTag(newRepoName: String, shaOpt: Option[String], tagText: String, version: String): Try[Unit] = {
+    shaOpt.map { sha =>
       git.tagAnnotatedCommit(newRepoName, sha, tagText, version)
-    }.getOrElse{
+    }.getOrElse {
       Failure(new IllegalAccessException("Didn't get a valid sha, check the list of commits"))
     }
   }

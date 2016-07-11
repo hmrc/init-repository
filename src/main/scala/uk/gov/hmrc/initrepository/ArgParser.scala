@@ -25,9 +25,10 @@ object ArgParser{
 
   case class Config(
                      repoName: String = "",
-                     teamName:String = "",
-                     repoType:RepositoryType = RepositoryType.Sbt,
-                     verbose:Boolean = false)
+                     teamName: String = "",
+                     repoType: RepositoryType = RepositoryType.Sbt,
+                     bootStrapTagName: String = "0.1.0",
+                     verbose: Boolean = false)
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
 
@@ -40,15 +41,32 @@ object ArgParser{
     help("help") text "prints this usage text"
 
     arg[String]("repo-name") action { (x, c) =>
-      c.copy(repoName = x) } text "the name of the github repository"
+      c.copy(repoName = x)
+    } text "the name of the github repository"
 
     arg[String]("team-name") action { (x, c) =>
-      c.copy(teamName = x) } text "the github team name"
+      c.copy(teamName = x)
+    } text "the github team name"
 
     arg[RepositoryType]("repository-type") action { (x, c) =>
-      c.copy(repoType = x) } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
+      c.copy(repoType = x)
+    } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
+
+    arg[String]("bootstrap-tag") optional() action { (x, c) =>
+      c.copy(bootStrapTagName = x)
+    } validate (x =>
+      if (x.matches("^\\d+.\\d+.\\d+$"))
+        success
+      else
+        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
+      ) text(
+        """
+          |[Optional] Bootstrap tag version. Required only for migrated repositories and should be the latest tag in the
+          |internal repository.
+        """.stripMargin)
 
     opt[Unit]('v', "verbose") action { (x, c) =>
-      c.copy(verbose = true) } text "verbose mode (debug logging)"
+      c.copy(verbose = true)
+    } text "verbose mode (debug logging)"
   }
 }

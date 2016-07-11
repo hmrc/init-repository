@@ -45,6 +45,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       val repoId = 2364862
       val teamName: String = "teamname"
       val repoUrl = "repo-url"
+      val bootstrapTag = "1.0.0"
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
@@ -57,7 +58,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag)) thenReturn Success()
 
       // setup travis calls
       val accessToken = "access_token"
@@ -69,7 +70,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
       when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt).await
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
