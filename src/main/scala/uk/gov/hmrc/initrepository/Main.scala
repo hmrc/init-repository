@@ -106,7 +106,7 @@ object Main {
   }
 
   def main(args: Array[String]) {
-      ArgParser.parser.parse(args, Config()) foreach { config =>
+      ArgParser.parser.parse(args, Config()).fold(throw new IllegalArgumentException("error while parsing provided arguments")) { config =>
         val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
         if(config.verbose) {
           root.setLevel(Level.DEBUG)
