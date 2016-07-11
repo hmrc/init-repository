@@ -23,12 +23,15 @@ object ArgParser{
   implicit val RepositoryTypeRead: scopt.Read[RepositoryType.Value] =
     scopt.Read.reads(RepositoryType withName _)
 
+  val DEFAULT_BOOTSTRAP_TAG = "0.1.0"
+
   case class Config(
                      repoName: String = "",
                      teamName: String = "",
                      repoType: RepositoryType = RepositoryType.Sbt,
-                     bootStrapTagName: String = "0.1.0",
+                     bootStrapTagName: String = DEFAULT_BOOTSTRAP_TAG,
                      verbose: Boolean = false)
+
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
 
@@ -53,17 +56,16 @@ object ArgParser{
     } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
 
     arg[String]("bootstrap-tag") optional() action { (x, c) =>
-      c.copy(bootStrapTagName = x)
+      c.copy(bootStrapTagName = if(x.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)
     } validate (x =>
-      if (x.matches("^\\d+.\\d+.\\d+$"))
+      if (x.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
         success
       else
         failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
       ) text(
-        """
-          |[Optional] Bootstrap tag version. Required only for migrated repositories and should be the latest tag in the
-          |internal repository.
-        """.stripMargin)
+        """|[Optional] Bootstrap tag version. Required only for migrated repositories and should be the latest tag in the
+           |internal repository.""".stripMargin
+      )
 
     opt[Unit]('v', "verbose") action { (x, c) =>
       c.copy(verbose = true)
