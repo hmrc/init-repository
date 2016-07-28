@@ -22,7 +22,7 @@ import uk.gov.hmrc.initrepository.git.LocalGitStore
 import org.scalatest._
 
 import scala.collection.JavaConversions._
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValues with TryValues with BeforeAndAfterEach{
@@ -68,7 +68,14 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
       val lastCommit = git.lastCommitSha("test-repo").get.get
 
       git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "v0.1.0")
-      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
+      val tag: Try[Option[String]] = git.lastTag("test-repo")
+      
+      tag match {
+        case Failure(x) => x.printStackTrace()
+        case _ => println("success")
+      }
+      
+      tag.get.value shouldBe "v0.1.0"
     }
 
     "tag a given commit with a leading 'v' in the version number if it is missed off" in {
@@ -77,7 +84,13 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
       val lastCommit = git.lastCommitSha("test-repo").get.value
 
       git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "0.1.0")
-      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
+      val tag: Try[Option[String]] = git.lastTag("test-repo")
+      tag match {
+        case Failure(x) => x.printStackTrace()
+        case _ => println("success")
+      }
+
+      tag.get.value shouldBe "v0.1.0"
     }
   }
 
