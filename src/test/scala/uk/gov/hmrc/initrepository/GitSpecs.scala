@@ -71,7 +71,7 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
       val tag: Try[Option[String]] = git.lastTag("test-repo")
       
       tag match {
-        case Failure(x) => x.printStackTrace()
+        case Failure(x) => Log.error(x.getStackTraceString)
         case _ => println("success")
       }
       
