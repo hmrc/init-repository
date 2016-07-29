@@ -76,10 +76,10 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
     def createOriginWithOneCommit(newRepoName:String) = {
       val bareOriginGitStore = new LocalGitStore(bareOriginGitStoreDir)
-      bareOriginGitStore.init(newRepoName, isBare = true)
-      //to satisfy git on travis while running the tests
-      bareOriginGitStore.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(newRepoName)).map { _ => Unit }
-      bareOriginGitStore.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(newRepoName)).map { _ => Unit }
+      GitRepoConfig.withNameConfig(bareOriginGitStore, newRepoName) {
+        bareOriginGitStore.init(newRepoName, isBare = true)
+      }
+
       createACommit(bareOriginGitStoreDir.resolve(newRepoName).toString, newRepoName)
       bareOriginGitStore
     }
@@ -88,7 +88,12 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       val gitStore = Files.createTempDirectory("temporary-git-dir")
       val git = new LocalGitStore(gitStore)
 
-      git.cloneRepoURL(bareRepoUrl)
+      GitRepoConfig.withNameConfig(git, newRepoName) {
+        git.cloneRepoURL(bareRepoUrl)
+      }
+
+      git.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(newRepoName)).map { _ => Unit }
+      git.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(newRepoName)).map { _ => Unit }
       git.commitFileToRoot(newRepoName, "LICENCE", "the licence", "hmrc-web-operations", "e@ma.il")
       git.push(newRepoName)
 
@@ -96,4 +101,19 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
     }
   }
+
 }
+
+object GitRepoConfig {
+  //to satisfy git on travis while running the tests
+  def withNameConfig[T](store : LocalGitStore, reponame: String)(f : => T ) : T = {
+
+    val result = f
+
+    store.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(reponame)).map { _ => Unit }
+    store.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(reponame)).map { _ => Unit }
+
+    result
+  }
+}
+
