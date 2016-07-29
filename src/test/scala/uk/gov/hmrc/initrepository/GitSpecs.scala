@@ -42,9 +42,16 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
   "Git.cloneRepo" should {
 
     "clone a repo" in {
-      git.cloneRepoURL(thisProjectsPath.toString)
-      
-      tempDir.resolve(thisRepoName).resolve(".git").toFile.isDirectory shouldBe true
+
+      repoWithOneCommit("test-repo", "README.md")
+
+      val storePath2: Path = Files.createTempDirectory("init-repository-git-store-").toAbsolutePath
+
+      val git2 = new LocalGitStore(storePath2)
+
+      git2.cloneRepoURL(s"${tempDir.resolve("test-repo")}")
+
+      storePath2.resolve("test-repo").resolve(".git").toFile.isDirectory shouldBe true
     }
   }
   

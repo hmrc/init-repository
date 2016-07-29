@@ -77,6 +77,9 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
     def createOriginWithOneCommit(newRepoName:String) = {
       val bareOriginGitStore = new LocalGitStore(bareOriginGitStoreDir)
       bareOriginGitStore.init(newRepoName, isBare = true)
+      //to satisfy git on travis while running the tests
+      bareOriginGitStore.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(newRepoName)).map { _ => Unit }
+      bareOriginGitStore.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(newRepoName)).map { _ => Unit }
       createACommit(bareOriginGitStoreDir.resolve(newRepoName).toString, newRepoName)
       bareOriginGitStore
     }
