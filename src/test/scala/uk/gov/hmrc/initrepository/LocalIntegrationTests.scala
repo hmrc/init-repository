@@ -24,6 +24,7 @@ import uk.gov.hmrc.initrepository.bintray.{Bintray, BintrayService}
 import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 
 import scala.concurrent.Future
+import scala.util.Try
 
 class LocalIntegrationTests extends WordSpec with Matchers with FutureValues with OptionValues{
 
@@ -51,7 +52,13 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
 
       val git = {
         val gitStore = Files.createTempDirectory("init-repository-git-store-")
-        val localGitStore = new LocalGitStore(gitStore)
+        val localGitStore = new LocalGitStore(gitStore) {
+          override def cloneRepoURL(url: String): Try[Unit] =
+            GitRepoConfig.withNameConfig(this, getRepoNameFromUrl(url)) {
+              super.cloneRepoURL(url)
+            }
+
+        }
         new LocalGitService(localGitStore)
       }
 

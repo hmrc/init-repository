@@ -106,7 +106,7 @@ class LocalGitStore(workspace:Path) {
   }
 
   def cloneRepoURL(url: String): Try[Unit] = {
-    val name = url.split('/').last.stripSuffix(".git")
+    val name: String = getRepoNameFromUrl(url)
     val targetDir = workspace.resolve(name)
 
     Log.info(s"cloning $url into $targetDir")
@@ -116,5 +116,10 @@ class LocalGitStore(workspace:Path) {
     }
 
     git(s"clone $url") map { _ => Unit }
+  }
+
+  def getRepoNameFromUrl(url: String): String = {
+    val name = url.split('/').last.stripSuffix(".git")
+    name
   }
 }
