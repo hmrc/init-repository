@@ -55,6 +55,7 @@ class LocalGitStore(workspace:Path) {
   }
 
   def tagAnnotatedCommit(repoName: String, sha: String, tag:String, version:String):Try[Unit] = {
+    Log.info(s"creating tag for $repoName, sha : $sha, tagName : $tag, version : $version")
     val versionWithPrefix = "v" + version.stripPrefix("v")
     gitCommandParts(Array("tag", "-a", "-m", "Bootstrap tag",  versionWithPrefix), inRepo = Some(repoName)).map { _ => Unit }
   }
@@ -96,14 +97,7 @@ class LocalGitStore(workspace:Path) {
 
   def git(command:String, inRepo:Option[String] = None):Try[List[String]]={
     val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
-    val result: Try[List[String]] = Command.run(s"$gitCommand $command", inDir = Some(cwd))
-
-    result match {
-      case Failure(x) =>
-        Log.error("error while cloning repo", x)
-        result
-      case s => result
-    }
+    Command.run(s"$gitCommand $command", inDir = Some(cwd))
   }
 
   def init(name:String, isBare:Boolean = false):Try[Unit]={

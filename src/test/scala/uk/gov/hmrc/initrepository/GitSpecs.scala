@@ -83,6 +83,10 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
 
   def repoWithOneCommit(name:String, fileName:String): Unit ={
     git.init(name)
+
+    //to satisfy git on travis while running the tests
+    git.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(name)).map { _ => Unit }
+    git.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(name)).map { _ => Unit }
     git.commitFileToRoot(name, "README.md", fileContent = "Some useful info.", "user", "email")
   }
 

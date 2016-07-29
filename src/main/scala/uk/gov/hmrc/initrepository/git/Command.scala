@@ -62,7 +62,7 @@ object Command {
       val exitCode = pb.!(logger)
 
       if(exitCode != 0) Log.info(s"got exit code $exitCode from command ${cmd.mkString(" ")}")
-      if(err.size > 0)  Log.debug(s"got following output on error stream from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
+      if(err.size > 0)  Log.error(s"got following output on error stream from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
 
       out.toList
     }
