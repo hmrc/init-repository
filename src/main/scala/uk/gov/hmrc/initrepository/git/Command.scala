@@ -47,7 +47,7 @@ object Command {
       out.toList
     }
 
-    Await.ready(cmdF, 1 minute)
+    Await.ready(cmdF, 2 minute)
     cmdF.value.get
   }
 
@@ -67,7 +67,7 @@ object Command {
       out.toList
     }
 
-    Await.ready(cmdF, 1 minute)
+    Await.ready(cmdF, 2 minute)
     cmdF.value.get
   }
 }

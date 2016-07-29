@@ -18,13 +18,14 @@ package uk.gov.hmrc.initrepository.git
 
 import java.nio.file.{Files, Path}
 
+
 import org.apache.commons.io.FileUtils
 import uk.gov.hmrc.initrepository.Log
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 object Git{
   def sshUrl(name:String, orgName:String) = s"git@github.com:$orgName/$name.git".toLowerCase
@@ -95,7 +96,14 @@ class LocalGitStore(workspace:Path) {
 
   def git(command:String, inRepo:Option[String] = None):Try[List[String]]={
     val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
-    Command.run(s"$gitCommand $command", inDir = Some(cwd))
+    val result: Try[List[String]] = Command.run(s"$gitCommand $command", inDir = Some(cwd))
+
+    result match {
+      case Failure(x) =>
+        Log.error("error while cloning repo", x)
+        result
+      case s => result
+    }
   }
 
   def init(name:String, isBare:Boolean = false):Try[Unit]={
