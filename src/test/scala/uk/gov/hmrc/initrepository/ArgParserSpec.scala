@@ -34,14 +34,14 @@ class ArgParserSpec extends WordSpec with Matchers {
     "create config with default bootstrap version of 0.1.0 if none provided" in {
 
 
-      val args = Array("""repoName teamName Sbt""".split(" "): _*)
+      var args = Array("""repoName teamName Sbt""".split(" "): _*)
 
       ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "0.1.0", false)
     }
 
     "create config by evaluating empty boot strap tag to default boot strap tag number" in {
 
-      val args = Array("repoName","teamName", "Sbt","")
+      val args = Array("repoName","teamName", "Sbt"," ")
 
       ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "0.1.0", false)
     }

@@ -56,16 +56,13 @@ object ArgParser{
     } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
 
     arg[String]("bootstrap-tag") optional() action { (x, c) =>
-      c.copy(bootStrapTagName = if(x.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)
+      c.copy(bootStrapTagName = if(x.trim.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)
     } validate (x =>
-      if (x.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
+      if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
         success
       else
         failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
-      ) text(
-        """|[Optional] Bootstrap tag version. Required only for migrated repositories and should be the latest tag in the
-           |internal repository.""".stripMargin
-      )
+      ) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
 
     opt[Unit]('v', "verbose") action { (x, c) =>
       c.copy(verbose = true)
