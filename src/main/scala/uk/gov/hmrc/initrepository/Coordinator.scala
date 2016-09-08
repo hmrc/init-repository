@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.initrepository
 
+import uk.gov.hmrc.initrepository.FutureUtils.exponentialRetry
 import uk.gov.hmrc.initrepository.RepositoryType.RepositoryType
 import uk.gov.hmrc.initrepository.bintray.BintrayService
 import uk.gov.hmrc.initrepository.git.LocalGitService
@@ -52,7 +53,7 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     for {
       teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName)
-      _ <- addRepoToTeam(newRepoName, teamId)
+      _ <- exponentialRetry(10){addRepoToTeam(newRepoName, teamId)}
       _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion))
     } yield repoUrl
 
