@@ -16,17 +16,15 @@
 
 package uk.gov.hmrc.initrepository
 
-import uk.gov.hmrc.initrepository.bintray.BintrayService
-import uk.gov.hmrc.initrepository.git.LocalGitService
+import org.mockito.Matchers.{eq => meq, _}
 import org.mockito.Mockito._
-import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import uk.gov.hmrc.initrepository.bintray.BintrayService
+import uk.gov.hmrc.initrepository.git.LocalGitService
 
 import scala.concurrent.Future
 import scala.util.Success
-
-import org.mockito.Matchers.{eq => meq}
 
 class CoordinatorTests extends WordSpec with Matchers with FutureValues with BeforeAndAfterEach with MockitoSugar {
 
@@ -70,7 +68,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
       when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag).await
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = true).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -89,6 +87,51 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       verify(travis).activateHook(accessToken, repoId)
 
     }
+    "run operations without enabling travis if enableTravis is false" in {
+
+      val github = mock[Github]
+      val bintray = mock[BintrayService]
+      val git = mock[LocalGitService]
+      val travis = mock[TravisConnector]
+
+      val repoName = "newrepo"
+      val repoId = 2364862
+      val teamName: String = "teamname"
+      val repoUrl = "repo-url"
+      val bootstrapTag = "1.0.0"
+
+      // setup pre-conditions
+      when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+      when(github.containsRepo(repoName)) thenReturn FutureFalse
+      when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
+
+      // setup repo creation calls
+      when(github.createRepo(repoName)) thenReturn Future.successful(repoUrl)
+      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
+      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
+
+      // setup git calls
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag)) thenReturn Success()
+
+
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = false).await
+
+      // verify pre-conditions
+      verify(github).containsRepo(repoName)
+      verify(github, atLeastOnce()).teamId(teamName)
+      verify(bintray).reposContainingPackage(repoName)
+
+      // verify repo creation calls
+      verify(github).createRepo(repoName)
+      verify(bintray).createPackagesFor(repoName)
+      verify(github).addRepoToTeam(repoName, 1)
+
+      // verify no travis
+      verifyZeroInteractions(travis)
+
+
+    }
+
   }
 }
 

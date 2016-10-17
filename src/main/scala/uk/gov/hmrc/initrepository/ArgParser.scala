@@ -18,7 +18,7 @@ package uk.gov.hmrc.initrepository
 
 import uk.gov.hmrc.initrepository.RepositoryType.RepositoryType
 
-object ArgParser{
+object ArgParser {
 
   implicit val RepositoryTypeRead: scopt.Read[RepositoryType.Value] =
     scopt.Read.reads(RepositoryType withName _)
@@ -30,7 +30,9 @@ object ArgParser{
                      teamName: String = "",
                      repoType: RepositoryType = RepositoryType.Sbt,
                      bootStrapTagName: String = DEFAULT_BOOTSTRAP_TAG,
-                     verbose: Boolean = false)
+                     verbose: Boolean = false,
+                     enableTravis: Boolean = false
+                   )
 
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
@@ -56,13 +58,17 @@ object ArgParser{
     } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
 
     arg[String]("bootstrap-tag") optional() action { (x, c) =>
-      c.copy(bootStrapTagName = if(x.trim.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)
+      c.copy(bootStrapTagName = if (x.trim.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)
     } validate (x =>
       if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
         success
       else
         failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
       ) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
+
+    opt[Unit]("enable-travis") action { (x, c) =>
+      c.copy(enableTravis = true)
+    } text "whether to enable travis integration"
 
     opt[Unit]('v', "verbose") action { (x, c) =>
       c.copy(verbose = true)

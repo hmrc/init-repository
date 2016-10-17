@@ -29,7 +29,7 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String): Future[Unit] = {
+  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, enableTravis: Boolean): Future[Unit] = {
     checkPreConditions(newRepoName, team).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
@@ -37,7 +37,7 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
         for {
           repoUrl <- initGitRepo(newRepoName, team, repositoryType, bootstrapVersion)
           _ <- bintray.createPackagesFor(newRepoName)
-          _ <- initTravis(newRepoName)
+          _ <- initTravis(newRepoName, enableTravis)
         } yield repoUrl
 
       } else {
@@ -53,7 +53,9 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     for {
       teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName)
-      _ <- exponentialRetry(10){addRepoToTeam(newRepoName, teamId)}
+      _ <- exponentialRetry(10) {
+        addRepoToTeam(newRepoName, teamId)
+      }
       _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion))
     } yield repoUrl
 
@@ -63,15 +65,19 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     }.getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
   }
 
-  private def initTravis(newRepoName: String): Future[Unit] = {
+  private def initTravis(newRepoName: String, enable: Boolean): Future[Unit] = {
     implicit val backoffStrategy = TravisSearchBackoffStrategy()
-
-    for {
-      authentication <- travis.authenticate
-      _ <- travis.syncWithGithub(authentication.accessToken)
-      newRepoId <- travis.searchForRepo(authentication.accessToken, newRepoName)
-      _ <- travis.activateHook(authentication.accessToken, newRepoId)
-    } yield Unit
+    if (enable)
+      for {
+        authentication <- travis.authenticate
+        _ <- travis.syncWithGithub(authentication.accessToken)
+        newRepoId <- travis.searchForRepo(authentication.accessToken, newRepoName)
+        _ <- travis.activateHook(authentication.accessToken, newRepoId)
+      } yield Unit
+    else{
+      Log.info(s"Skiping travis intigration")
+      Future.successful(())
+    }
   }
 
   private def tryToFuture[A](t: => Try[A]): Future[A] = {
