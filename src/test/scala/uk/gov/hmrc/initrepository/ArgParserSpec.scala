@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ class ArgParserSpec extends WordSpec with Matchers {
 
       val args = Array("""repoName teamName Sbt 1.0.0 -v --enable-travis""".split(" "): _*)
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "1.0.0", verbose = true, enableTravis = true)
+      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName"), RepositoryType.Sbt, "1.0.0", verbose = true, enableTravis = true)
     }
 
     "create config with default bootstrap version of 0.1.0 if none provided" in {
@@ -35,14 +35,14 @@ class ArgParserSpec extends WordSpec with Matchers {
 
       var args = Array("""repoName teamName Sbt""".split(" "): _*)
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "0.1.0", false, false)
+      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName"), RepositoryType.Sbt, "0.1.0", false, false)
     }
 
     "create config by evaluating empty boot strap tag to default boot strap tag number" in {
 
       val args = Array("repoName","teamName", "Sbt"," ")
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "0.1.0", false, false)
+      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName"), RepositoryType.Sbt, "0.1.0", false, false)
     }
 
     "fail if correct boot strap version format is not provided" in {
