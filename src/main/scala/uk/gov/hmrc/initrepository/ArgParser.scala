@@ -27,7 +27,7 @@ object ArgParser {
 
   case class Config(
                      repoName: String = "",
-                     teamName: String = "",
+                     teamNames: Seq[String] = Nil,
                      repoType: RepositoryType = RepositoryType.Sbt,
                      bootStrapTagName: String = DEFAULT_BOOTSTRAP_TAG,
                      verbose: Boolean = false,
@@ -45,19 +45,19 @@ object ArgParser {
 
     help("help") text "prints this usage text"
 
-    arg[String]("repo-name") action { (x, c) =>
+    arg[String]("repo-name").abbr("rn") action { (x, c) =>
       c.copy(repoName = x)
     } text "the name of the github repository"
 
-    arg[String]("team-name") action { (x, c) =>
-      c.copy(teamName = x)
-    } text "the github team name"
+    arg[Seq[String]]("team-names").abbr("tns").valueName("<team1>,<team2>...") action { (x, c) =>
+      c.copy(teamNames = x)
+    } text "the github team names"
 
-    arg[RepositoryType]("repository-type") action { (x, c) =>
+    arg[RepositoryType]("repository-type").abbr("rt") action { (x, c) =>
       c.copy(repoType = x)
     } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
 
-    arg[String]("bootstrap-tag") optional() action { (x, c) =>
+    arg[String]("bootstrap-tag").abbr("bt") optional() action { (x, c) =>
       c.copy(bootStrapTagName = if (x.trim.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)
     } validate (x =>
       if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))

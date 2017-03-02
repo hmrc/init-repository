@@ -41,19 +41,24 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
 
       val repoName = "newrepo"
       val repoId = 2364862
-      val teamName: String = "teamname"
+      val teamName1: String = "teamname1"
+      val teamName2: String = "teamname2"
+      val teamId1: Int = 1
+      val teamId2: Int = 2
       val repoUrl = "repo-url"
       val bootstrapTag = "1.0.0"
 
       // setup pre-conditions
-      when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+      when(github.teamId(teamName1)) thenReturn Future.successful(Some(teamId1))
+      when(github.teamId(teamName2)) thenReturn Future.successful(Some(teamId2))
       when(github.containsRepo(repoName)) thenReturn FutureFalse
       when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
       when(github.createRepo(repoName)) thenReturn Future.successful(repoUrl)
       when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
-      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
+      when(github.addRepoToTeam(repoName, teamId1)) thenReturn Future.successful()
+      when(github.addRepoToTeam(repoName, teamId2)) thenReturn Future.successful()
 
       // setup git calls
       when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag)) thenReturn Success()
@@ -68,17 +73,18 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
       when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = true).await
+      new Coordinator(github, bintray, git, travis).run(repoName, Seq(teamName1, teamName2), RepositoryType.Sbt, bootstrapTag, enableTravis = true).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
-      verify(github, atLeastOnce()).teamId(teamName)
+      verify(github, atLeastOnce()).teamId(teamName1)
       verify(bintray).reposContainingPackage(repoName)
 
       // verify repo creation calls
       verify(github).createRepo(repoName)
       verify(bintray).createPackagesFor(repoName)
-      verify(github).addRepoToTeam(repoName, 1)
+      verify(github).addRepoToTeam(repoName, teamId1)
+      verify(github).addRepoToTeam(repoName, teamId2)
 
       // verify travis setup
       verify(travis).authenticate
@@ -114,7 +120,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag)) thenReturn Success()
 
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = false).await
+      new Coordinator(github, bintray, git, travis).run(repoName, Seq(teamName), RepositoryType.Sbt, bootstrapTag, enableTravis = false).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
