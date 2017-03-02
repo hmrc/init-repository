@@ -10,3 +10,4 @@ This tool automatically creates a repository for the new Tax Platform. Specifica
 * Create a new Bintray release-candidates package [HMRC on Bintray](https://www.bintray.com/hmrc)
 
 The HMRC and Bintray credentials are intentionally omitted from this repository for security reasons. This repository is useless without them.
+
