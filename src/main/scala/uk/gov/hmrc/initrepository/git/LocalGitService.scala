@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,13 +89,19 @@ class LocalGitService(git: LocalGitStore) {
     """.stripMargin
   }
 
-  def initialiseRepository(repoUrl: String, repositoryType: RepositoryType, bootstrapVersion: String): Try[Unit] = {
+
+
+  def initialiseRepository(repoUrl: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String]): Try[Unit] = {
+
+    def getManifestContents(digitalServiceName: Option[String]) = digitalServiceName.map(dsn => s"digitalServiceName: $dsn")
+
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for {
       _ <- git.cloneRepoURL(repoUrl)
       _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail)
       _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
       _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType), CommitUserName, CommitUserEmail)
+      _ <- git.commitFileToRoot(newRepoName, "repository.yaml", getManifestContents(digitalServiceName), CommitUserName, CommitUserEmail)
       shaO <- git.lastCommitSha(newRepoName)
       _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion(bootstrapVersion))
       _ <- git.push(newRepoName)

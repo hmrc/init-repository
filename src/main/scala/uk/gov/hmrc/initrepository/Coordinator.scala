@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,13 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, enableTravis: Boolean): Future[Unit] = {
+  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, enableTravis: Boolean, digitalServiceName: Option[String]): Future[Unit] = {
     checkPreConditions(newRepoName, team).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
 
         for {
-          repoUrl <- initGitRepo(newRepoName, team, repositoryType, bootstrapVersion)
+          repoUrl <- initGitRepo(newRepoName, team, repositoryType, bootstrapVersion, digitalServiceName)
           _ <- bintray.createPackagesFor(newRepoName)
           _ <- initTravis(newRepoName, enableTravis)
         } yield repoUrl
@@ -49,14 +49,14 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     }
   }
 
-  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String): Future[String] =
+  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String]): Future[String] =
     for {
       teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName)
       _ <- exponentialRetry(10) {
         addRepoToTeam(newRepoName, teamId)
       }
-      _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion))
+      _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion, digitalServiceName))
     } yield repoUrl
 
   private def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {

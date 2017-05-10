@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,18 +113,18 @@ object Main {
         } else {
           root.setLevel(Level.INFO)
         }
-        start(config.repoName, config.teamName, config.repoType, config.bootStrapTagName, config.enableTravis )
+        start(config.repoName, config.teamName, config.repoType, config.bootStrapTagName, config.enableTravis, config.digitalServiceName)
       }
   }
 
-  def start(newRepoName: String, team: String, repositoryType:RepositoryType, bootstrapVersion :String, enableTravis :Boolean): Unit = {
+  def start(newRepoName: String, team: String, repositoryType:RepositoryType, bootstrapVersion :String, enableTravis :Boolean, digitalServiceName: Option[String]): Unit = {
     val github = buildGithub()
     val bintray = buildBintrayService(repositoryType)
     val travis = buildTravis
 
     try {
       val result = new Coordinator(github, bintray, git, travis)
-        .run(newRepoName, team, repositoryType, bootstrapVersion, enableTravis)
+        .run(newRepoName, team, repositoryType, bootstrapVersion, enableTravis, digitalServiceName)
 
       Await.result(result, Duration(120, TimeUnit.SECONDS))
     } finally {

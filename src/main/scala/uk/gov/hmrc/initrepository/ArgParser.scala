@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,8 @@ object ArgParser {
                      repoType: RepositoryType = RepositoryType.Sbt,
                      bootStrapTagName: String = DEFAULT_BOOTSTRAP_TAG,
                      verbose: Boolean = false,
-                     enableTravis: Boolean = false
+                     enableTravis: Boolean = false,
+                     digitalServiceName: Option[String] = None
                    )
 
 
@@ -56,6 +57,10 @@ object ArgParser {
     arg[RepositoryType]("repository-type") action { (x, c) =>
       c.copy(repoType = x)
     } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
+
+    opt[String]("digital-service-name").abbr("dsn").optional() action { (x, c) =>
+      c.copy(digitalServiceName = Option(x))
+    } text s"Digital service name"
 
     arg[String]("bootstrap-tag") optional() action { (x, c) =>
       c.copy(bootStrapTagName = if (x.trim.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)

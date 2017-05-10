@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,13 @@ class LocalGitStore(workspace:Path) {
     Log.info(s"creating tag for $repoName, sha : $sha, tagName : $tag, version : $version")
     val versionWithPrefix = "v" + version.stripPrefix("v")
     gitCommandParts(Array("tag", "-a", "-m", "Bootstrap tag",  versionWithPrefix), inRepo = Some(repoName)).map { _ => Unit }
+  }
+
+  /**
+    * Does NOT create/write file if the fileContents are None
+    */
+  def commitFileToRoot(repoName: String, fileName:String, fileContent: Option[String], user:String, email:String): Try[Unit]= {
+    fileContent.map(commitFileToRoot(repoName, fileName, _, user, email)).getOrElse(Try())
   }
 
   def commitFileToRoot(repoName: String, fileName:String, fileContent: String, user:String, email:String): Try[Unit]= {

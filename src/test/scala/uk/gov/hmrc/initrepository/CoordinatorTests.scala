@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
   val FutureFalse = Future.successful(false)
   val FutureUnit = Future.successful(Unit)
 
+  val digitalServiceName = Some("digital-service-123")
+
   "Coordinator.run" should {
     "run operations in order when calls are successful" in {
 
@@ -56,7 +58,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName)) thenReturn Success()
 
       // setup travis calls
       val accessToken = "access_token"
@@ -68,7 +70,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
       when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = true).await
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -111,10 +113,10 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName)) thenReturn Success()
 
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = false).await
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = false, digitalServiceName).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -134,4 +136,3 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
 
   }
 }
-
