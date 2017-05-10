@@ -93,7 +93,7 @@ class LocalGitService(git: LocalGitStore) {
 
   def initialiseRepository(repoUrl: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String]): Try[Unit] = {
 
-    def getManifestContents(digitalServiceName: Option[String]) = digitalServiceName.map(dsn => s"digitalServiceName: $dsn")
+    def getManifestContents(digitalServiceName: Option[String]) = digitalServiceName.map(dsn => s"digital-service: $dsn")
 
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for {
