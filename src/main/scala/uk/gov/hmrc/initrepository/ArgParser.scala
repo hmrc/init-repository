@@ -32,7 +32,8 @@ object ArgParser {
                      bootStrapTagName: String = DEFAULT_BOOTSTRAP_TAG,
                      verbose: Boolean = false,
                      enableTravis: Boolean = false,
-                     digitalServiceName: Option[String] = None
+                     digitalServiceName: Option[String] = None,
+                     privateRepo: Boolean = false
                    )
 
 
@@ -57,6 +58,10 @@ object ArgParser {
     arg[RepositoryType]("repository-type") action { (x, c) =>
       c.copy(repoType = x)
     } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
+
+    opt[Unit]("private") action { (x, c) =>
+      c.copy(privateRepo = true)
+    } text "creates a private repository. Default is public"
 
     opt[String]("digital-service-name").abbr("dsn").optional() action { (x, c) =>
       c.copy(digitalServiceName = Option(x))

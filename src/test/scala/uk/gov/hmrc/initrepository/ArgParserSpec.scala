@@ -25,9 +25,17 @@ class ArgParserSpec extends WordSpec with Matchers {
   "ArgParser" should {
     "create correct config" in {
 
-      val args = Array("""repoName teamName Sbt 1.0.0 -v --enable-travis""".split(" "): _*)
+      val args = Array("""repoName teamName Sbt 1.0.0 -v --enable-travis --private""".split(" "): _*)
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "1.0.0", verbose = true, enableTravis = true)
+      ArgParser.parser.parse(args, Config()).get shouldBe Config (
+        repoName = "repoName",
+        teamName = "teamName",
+        repoType = RepositoryType.Sbt,
+        bootStrapTagName = "1.0.0",
+        verbose = true,
+        enableTravis = true,
+        privateRepo = true
+      )
     }
 
     "create config with default bootstrap version of 0.1.0 if none provided" in {

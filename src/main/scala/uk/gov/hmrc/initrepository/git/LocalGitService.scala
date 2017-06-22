@@ -32,20 +32,27 @@ class LocalGitService(git: LocalGitStore) {
   val CommitUserName = "hmrc-web-operations"
   val CommitUserEmail = "hmrc-web-operations@digital.hmrc.gov.uk"
 
-  def buildReadmeTemplate(repoName:String, repositoryType:RepositoryType):String={
+  def buildReadmeTemplate(repoName:String, repositoryType:RepositoryType, enableTravis: Boolean, privateRepo: Boolean):String={
     val bintrayRepoName = BintrayConfig.releasesRepositoryNameFor(repositoryType)
 
-    s"""
-      |# $repoName
-      |
-      |[![Build Status](https://travis-ci.org/hmrc/$repoName.svg?branch=master)](https://travis-ci.org/hmrc/$repoName) [ ![Download](https://api.bintray.com/packages/hmrc/$bintrayRepoName/$repoName/images/download.svg) ](https://bintray.com/hmrc/$bintrayRepoName/$repoName/_latestVersion)
-      |
-      |This is a placeholder README.md for a new repository
-      |
-      |### License
-      |
-      |This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
-    """.stripMargin
+    if (privateRepo)
+      s"""
+         |# $repoName
+         |
+         |This is a placeholder README.md for a new repository
+         |""".stripMargin
+    else
+      s"""
+        |# $repoName
+        |
+        |${if(enableTravis){s"[![Build Status](https://travis-ci.org/hmrc/$repoName.svg?branch=master)](https://travis-ci.org/hmrc/$repoName)"} else ""} [ ![Download](https://api.bintray.com/packages/hmrc/$bintrayRepoName/$repoName/images/download.svg) ](https://bintray.com/hmrc/$bintrayRepoName/$repoName/_latestVersion)
+        |
+        |This is a placeholder README.md for a new repository
+        |
+        |### License
+        |
+        |This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
+        |""".stripMargin
   }
 
   def buildTravisYamlTemplate(repoName:String):String={
@@ -91,16 +98,16 @@ class LocalGitService(git: LocalGitStore) {
 
 
 
-  def initialiseRepository(repoUrl: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String]): Try[Unit] = {
+  def initialiseRepository(repoUrl: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String], enableTravis: Boolean, privateRepo: Boolean): Try[Unit] = {
 
     def getManifestContents(digitalServiceName: Option[String]) = digitalServiceName.map(dsn => s"digital-service: $dsn")
 
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for {
       _ <- git.cloneRepoURL(repoUrl)
-      _ <- git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail)
+      _ <- if(enableTravis) git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail) else Try(Unit)
       _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
-      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType), CommitUserName, CommitUserEmail)
+      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType, enableTravis, privateRepo), CommitUserName, CommitUserEmail)
       _ <- git.commitFileToRoot(newRepoName, "repository.yaml", getManifestContents(digitalServiceName), CommitUserName, CommitUserEmail)
       shaO <- git.lastCommitSha(newRepoName)
       _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion(bootstrapVersion))

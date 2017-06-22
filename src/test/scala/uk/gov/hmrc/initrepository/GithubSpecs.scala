@@ -137,7 +137,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
 
   "Github.createRepo" should {
 
-    "successfully create repo" in {
+    "successfully create a public repo" in {
 
       givenGitHubExpects(
         method = POST,
@@ -146,7 +146,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
         willRespondWith = (201, None)
       )
 
-      val createdUrl = github.createRepo(repoName).await
+      val createdUrl = github.createRepo(repoName, privateRepo = false).await
 
       createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
 
@@ -159,6 +159,35 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
              |    "description": "",
              |    "homepage": "",
              |    "private": false,
+             |    "has_issues": true,
+             |    "has_wiki": true,
+             |    "has_downloads": true,
+             |    "license_template": "apache-2.0"
+             |}""".stripMargin)
+      )
+    }
+    "successfully create a private repo" in {
+
+      givenGitHubExpects(
+        method = POST,
+        url = urls.createRepo,
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        willRespondWith = (201, None)
+      )
+
+      val createdUrl = github.createRepo(repoName, privateRepo = true).await
+
+      createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
+
+      assertRequest(
+        method = POST,
+        url = urls.createRepo,
+        body = Some(
+          s"""{
+             |    "name": "$repoName",
+             |    "description": "",
+             |    "homepage": "",
+             |    "private": true,
              |    "has_issues": true,
              |    "has_wiki": true,
              |    "has_downloads": true,

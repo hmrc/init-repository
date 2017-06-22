@@ -26,7 +26,7 @@ import uk.gov.hmrc.initrepository.git.LocalGitService
 import scala.concurrent.Future
 import scala.util.Success
 
-class CoordinatorTests extends WordSpec with Matchers with FutureValues with BeforeAndAfterEach with MockitoSugar {
+class CoordinatorSpec extends WordSpec with Matchers with FutureValues with BeforeAndAfterEach with MockitoSugar {
 
   val FutureFalse = Future.successful(false)
   val FutureUnit = Future.successful(Unit)
@@ -53,12 +53,12 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
-      when(github.createRepo(repoName)) thenReturn Future.successful(repoUrl)
+      when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
       when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
       when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = true, privateRepo = false)) thenReturn Success()
 
       // setup travis calls
       val accessToken = "access_token"
@@ -70,7 +70,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
       when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName).await
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName, privateRepo = false).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -78,7 +78,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       verify(bintray).reposContainingPackage(repoName)
 
       // verify repo creation calls
-      verify(github).createRepo(repoName)
+      verify(github).createRepo(repoName, privateRepo = false)
       verify(bintray).createPackagesFor(repoName)
       verify(github).addRepoToTeam(repoName, 1)
 
@@ -108,15 +108,15 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
-      when(github.createRepo(repoName)) thenReturn Future.successful(repoUrl)
+      when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
       when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
       when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = false, privateRepo = false)) thenReturn Success()
 
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = false, digitalServiceName).await
+      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = false, digitalServiceName, privateRepo = false).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -124,7 +124,7 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       verify(bintray).reposContainingPackage(repoName)
 
       // verify repo creation calls
-      verify(github).createRepo(repoName)
+      verify(github).createRepo(repoName, privateRepo = false)
       verify(bintray).createPackagesFor(repoName)
       verify(github).addRepoToTeam(repoName, 1)
 
@@ -132,6 +132,55 @@ class CoordinatorTests extends WordSpec with Matchers with FutureValues with Bef
       verifyZeroInteractions(travis)
 
 
+    }
+
+    "creates a private repository and does not integrate with travis and Bintray" in {
+
+      val github = mock[Github]
+      val bintray = mock[BintrayService]
+      val git = mock[LocalGitService]
+      val travis = mock[TravisConnector]
+
+      val repoName = "newrepo"
+      val repoId = 2364862
+      val teamName: String = "teamname"
+      val repoUrl = "repo-url"
+      val bootstrapTag = "1.0.0"
+      val privateRepo = true
+
+      // setup pre-conditions
+      when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+      when(github.containsRepo(repoName)) thenReturn FutureFalse
+
+      // setup repo creation calls
+      when(github.createRepo(repoName, privateRepo = true)) thenReturn Future.successful(repoUrl)
+      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
+
+      // setup git calls
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = false, privateRepo)) thenReturn Success()
+
+
+      new Coordinator(github, bintray, git, travis).run(
+        newRepoName = repoName,
+        team = teamName,
+        repositoryType = RepositoryType.Sbt,
+        bootstrapVersion = bootstrapTag,
+        enableTravis = false,
+        digitalServiceName = digitalServiceName,
+        privateRepo = privateRepo
+      ).await
+
+      // verify pre-conditions
+      verify(github).containsRepo(repoName)
+      verify(github, atLeastOnce()).teamId(teamName)
+
+      // verify repo creation calls
+      verify(github).createRepo(repoName, privateRepo = true)
+      verify(github).addRepoToTeam(repoName, 1)
+
+      // verify no travis
+      verifyZeroInteractions(travis)
+      verifyZeroInteractions(bintray)
     }
 
   }

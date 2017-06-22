@@ -36,7 +36,7 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       val github = new Github {
         override def httpTransport: HttpTransport = ???
         override def githubUrls: GithubUrls = ???
-        override def createRepo(repoName: String): Future[String] =
+        override def createRepo(repoName: String, privateRepo: Boolean): Future[String] =
           Future.successful(s"${bareOriginGitStoreDir.toString}/$repoName")
         override def containsRepo(repoName: String): Future[Boolean] = Future.successful(false)
         override def teamId(team: String): Future[Option[Int]] = Future.successful(Some(1))
@@ -76,7 +76,7 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
       val origin = createOriginWithOneCommit(newRepoName)
 
       val coord = new Coordinator(github, bintray, git, travis)
-      coord.run(newRepoName, team = "un-used-in-this", RepositoryType.SbtPlugin, "1.10.1", false, None).await
+      coord.run(newRepoName, team = "un-used-in-this", RepositoryType.SbtPlugin, "1.10.1", false, None, privateRepo = false).await
 
       origin.lastTag(newRepoName).get.value shouldBe "v1.10.1"
     }
