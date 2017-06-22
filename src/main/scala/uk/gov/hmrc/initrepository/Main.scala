@@ -36,12 +36,19 @@ object RepositoryType extends Enumeration {
   val Sbt, SbtPlugin = Value
 }
 
-object Main {
+trait Main {
+
+  lazy val homeFolder:String = System.getProperty("user.home")
 
   def findGithubCreds(): ServiceCredentials = {
-    val githubCredsFile = System.getProperty("user.home") + "/.github/.credentials"
-    val githubCredsOpt = CredentialsFinder.findGithubCredsInFile(new File(githubCredsFile).toPath)
-    val creds = githubCredsOpt.getOrElse(throw new scala.IllegalArgumentException(s"Did not find valid Github credentials in $githubCredsFile"))
+
+    def credsFor(file: String): Option[ServiceCredentials] = {
+      CredentialsFinder.findGithubCredsInFile(new File(file).toPath)
+    }
+
+    val creds = credsFor(homeFolder + "/.github.com/.credentials")
+      .orElse(credsFor(homeFolder + "/.github/.credentials"))
+      .getOrElse(throw new scala.IllegalArgumentException("Did not find valid Github credentials in ~/.github/.credentials or ~/.github.com/.credentials"))
 
     Log.debug(s"github client_id ${creds.user}")
     Log.debug(s"github client_secret ${creds.pass.takeRight(3)}*******")
@@ -50,7 +57,7 @@ object Main {
   }
 
   def findTravisGithubCreds(): ServiceCredentials = {
-    val travisGithubCredsFile = System.getProperty("user.home") + "/.github/.traviscredentials"
+    val travisGithubCredsFile = homeFolder + "/.github/.traviscredentials"
     val maybeCreds = CredentialsFinder.findGithubCredsInFile(new File(travisGithubCredsFile).toPath)
     val creds = maybeCreds.getOrElse(throw new scala.IllegalArgumentException(s"Did not find valid Travis Github credentials in $travisGithubCredsFile"))
 
@@ -61,7 +68,7 @@ object Main {
   }
 
   def findBintrayCreds(): ServiceCredentials = {
-    val bintrayCredsFile = System.getProperty("user.home") + "/.bintray/.credentials"
+    val bintrayCredsFile = homeFolder + "/.bintray/.credentials"
     val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
 
     val creds = bintrayCredsOpt.getOrElse(throw new IllegalArgumentException(s"Did not find valid Bintray credentials in $bintrayCredsFile"))
@@ -73,15 +80,15 @@ object Main {
   }
 
   lazy val bintrayTransport = new HttpTransport {
-    override val creds: ServiceCredentials = findBintrayCreds()
+    override lazy val creds: ServiceCredentials = findBintrayCreds()
   }
 
   lazy val gitHubTransport = new HttpTransport {
-    override val creds: ServiceCredentials = findGithubCreds()
+    override lazy val creds: ServiceCredentials = findGithubCreds()
   }
 
   lazy val travisTransport = new HttpTransport {
-    override val creds: ServiceCredentials = findTravisGithubCreds()
+    override lazy val creds: ServiceCredentials = findTravisGithubCreds()
   }
 
   def buildBintrayService(repositoryType: RepositoryType) = new BintrayService {
@@ -105,7 +112,9 @@ object Main {
 
     override def travisUrls: TravisUrls = new TravisUrls()
   }
+}
 
+object Main extends Main {
   def main(args: Array[String]) {
     ArgParser.parser.parse(args, Config()).fold(throw new IllegalArgumentException("error while parsing provided arguments")) { config =>
       val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
