@@ -21,7 +21,7 @@ import java.io.{File, PrintWriter}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
 
-class MainSpec extends WordSpec with Matchers with BeforeAndAfterEach {
+class ToolsSupportSpec extends WordSpec with Matchers with BeforeAndAfterEach {
 
 
   override protected def beforeEach(): Unit = {
@@ -34,9 +34,9 @@ class MainSpec extends WordSpec with Matchers with BeforeAndAfterEach {
 
   }
 
-  "Main" should {
+  "ToolsSupport" should {
 
-    val main = new Main {
+    val main = new ToolsSupport {
       override lazy val homeFolder: String = System.getProperty("java.io.tmpdir")
     }
 

@@ -36,7 +36,7 @@ object RepositoryType extends Enumeration {
   val Sbt, SbtPlugin = Value
 }
 
-trait Main {
+trait ToolsSupport {
 
   lazy val homeFolder:String = System.getProperty("user.home")
 
@@ -114,7 +114,7 @@ trait Main {
   }
 }
 
-object Main extends Main {
+object Main extends ToolsSupport {
   def main(args: Array[String]) {
     ArgParser.parser.parse(args, Config()).fold(throw new IllegalArgumentException("error while parsing provided arguments")) { config =>
       val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
