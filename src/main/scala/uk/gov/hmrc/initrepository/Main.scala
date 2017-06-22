@@ -60,7 +60,7 @@ object Main {
     creds
   }
 
-  def findBintrayCreds():ServiceCredentials={
+  def findBintrayCreds(): ServiceCredentials = {
     val bintrayCredsFile = System.getProperty("user.home") + "/.bintray/.credentials"
     val bintrayCredsOpt = CredentialsFinder.findBintrayCredsInFile(new File(bintrayCredsFile).toPath)
 
@@ -84,7 +84,7 @@ object Main {
     override val creds: ServiceCredentials = findTravisGithubCreds()
   }
 
-  def buildBintrayService(repositoryType:RepositoryType) = new BintrayService {
+  def buildBintrayService(repositoryType: RepositoryType) = new BintrayService {
     override val bintray = new Bintray {
       override val http: HttpTransport = bintrayTransport
       override val urls: BintrayUrls = new BintrayUrls()
@@ -93,7 +93,7 @@ object Main {
     override val repositories: Set[String] = BintrayConfig(repositoryType)
   }
 
-  def buildGithub() = new Github{
+  def buildGithub() = new Github {
     override val httpTransport: HttpTransport = gitHubTransport
     override val githubUrls: GithubUrls = new GithubUrls()
   }
@@ -102,35 +102,34 @@ object Main {
 
   def buildTravis = new TravisConnector {
     override def httpTransport: HttpTransport = travisTransport
+
     override def travisUrls: TravisUrls = new TravisUrls()
   }
 
   def main(args: Array[String]) {
-      ArgParser.parser.parse(args, Config()).fold(throw new IllegalArgumentException("error while parsing provided arguments")) { config =>
-        val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
-        if(config.verbose) {
-          root.setLevel(Level.DEBUG)
-        } else {
-          root.setLevel(Level.INFO)
-        }
-        start(config.repoName, config.teamName, config.repoType, config.bootStrapTagName, config.enableTravis, config.digitalServiceName)
+    ArgParser.parser.parse(args, Config()).fold(throw new IllegalArgumentException("error while parsing provided arguments")) { config =>
+      val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
+      if (config.verbose) {
+        root.setLevel(Level.DEBUG)
+      } else {
+        root.setLevel(Level.INFO)
       }
-  }
 
-  def start(newRepoName: String, team: String, repositoryType:RepositoryType, bootstrapVersion :String, enableTravis :Boolean, digitalServiceName: Option[String]): Unit = {
-    val github = buildGithub()
-    val bintray = buildBintrayService(repositoryType)
-    val travis = buildTravis
+      val github = buildGithub()
+      val bintray = buildBintrayService(config.repoType)
+      val travis = buildTravis
 
-    try {
-      val result = new Coordinator(github, bintray, git, travis)
-        .run(newRepoName, team, repositoryType, bootstrapVersion, enableTravis, digitalServiceName)
+      try {
+        val result = new Coordinator(github, bintray, git, travis)
+          .run(config.repoName, config.teamName, config.repoType, config.bootStrapTagName, config.enableTravis, config.digitalServiceName, config.privateRepo)
 
-      Await.result(result, Duration(120, TimeUnit.SECONDS))
-    } finally {
-      github.close()
-      bintray.close()
-      travis.close()
+        Await.result(result, Duration(120, TimeUnit.SECONDS))
+      } finally {
+        github.close()
+        bintray.close()
+        travis.close()
+      }
     }
   }
+
 }

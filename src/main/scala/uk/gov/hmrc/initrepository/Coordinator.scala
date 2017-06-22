@@ -29,15 +29,15 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, enableTravis: Boolean, digitalServiceName: Option[String]): Future[Unit] = {
-    checkPreConditions(newRepoName, team).flatMap { error =>
+  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, enableTravis: Boolean, digitalServiceName: Option[String], privateRepo: Boolean): Future[Unit] = {
+    checkPreConditions(newRepoName, team, privateRepo).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
 
         for {
-          repoUrl <- initGitRepo(newRepoName, team, repositoryType, bootstrapVersion, digitalServiceName)
-          _ <- bintray.createPackagesFor(newRepoName)
-          _ <- initTravis(newRepoName, enableTravis)
+          repoUrl <- initGitRepo(newRepoName, team, repositoryType, bootstrapVersion, digitalServiceName, enableTravis, privateRepo)
+          _       <- initBintray(newRepoName, privateRepo)
+          _       <- initTravis(newRepoName, enableTravis)
         } yield repoUrl
 
       } else {
@@ -49,14 +49,14 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     }
   }
 
-  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String]): Future[String] =
+  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String], enableTravis: Boolean, privateRepo: Boolean): Future[String] =
     for {
       teamId <- github.teamId(team)
-      repoUrl <- github.createRepo(newRepoName)
+      repoUrl <- github.createRepo(newRepoName, privateRepo)
       _ <- exponentialRetry(10) {
         addRepoToTeam(newRepoName, teamId)
       }
-      _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion, digitalServiceName))
+      _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion, digitalServiceName, enableTravis, privateRepo))
     } yield repoUrl
 
   private def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {
@@ -75,9 +75,16 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
         _ <- travis.activateHook(authentication.accessToken, newRepoId)
       } yield Unit
     else{
-      Log.info(s"Skiping travis intigration")
+      Log.info(s"Skipping travis integration")
       Future.successful(())
     }
+  }
+
+  private def initBintray(newRepoName: String, privateRepo: Boolean): Future[Unit] = {
+    if(privateRepo) {
+      Log.info(s"Skipping Bintray packages creation as this is a private repository")
+      Future.successful()
+    } else bintray.createPackagesFor(newRepoName)
   }
 
   private def tryToFuture[A](t: => Try[A]): Future[A] = {
@@ -89,9 +96,9 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     }
   }
 
-  private def checkPreConditions(newRepoName: String, team: String): Future[PreConditionError[String]] = {
+  private def checkPreConditions(newRepoName: String, team: String, privateRepo: Boolean): Future[PreConditionError[String]] = {
     for (repoExists <- github.containsRepo(newRepoName);
-         existingPackages <- bintray.reposContainingPackage(newRepoName);
+         existingPackages <- if(privateRepo) Future.successful(Set.empty) else bintray.reposContainingPackage(newRepoName);
          teamExists <- github.teamId(team).map(_.isDefined))
       yield {
         if (repoExists) Some(s"Repository with name '$newRepoName' already exists in github ")

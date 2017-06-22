@@ -94,13 +94,13 @@ trait Github {
     }}
   }
 
-  def createRepo(repoName: String): Future[String] = {
-    Log.info(s"creating github repository with name '${repoName}'")
+  def createRepo(repoName: String, privateRepo: Boolean): Future[String] = {
+    Log.info(s"creating github repository with name '$repoName'")
     val payload = s"""{
                     |    "name": "$repoName",
                     |    "description": "",
                     |    "homepage": "",
-                    |    "private": false,
+                    |    "private": $privateRepo,
                     |    "has_issues": true,
                     |    "has_wiki": true,
                     |    "has_downloads": true,
