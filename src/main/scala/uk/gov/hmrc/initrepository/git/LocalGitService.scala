@@ -104,15 +104,15 @@ class LocalGitService(git: LocalGitStore) {
 
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for {
-      _ <- git.cloneRepoURL(repoUrl)
-      _ <- if(enableTravis) git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail) else Try(Unit)
-      _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
-      _ <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType, enableTravis, privateRepo), CommitUserName, CommitUserEmail)
-      _ <- git.commitFileToRoot(newRepoName, "repository.yaml", getManifestContents(digitalServiceName), CommitUserName, CommitUserEmail)
-      shaO <- git.lastCommitSha(newRepoName)
-      _ <- maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion(bootstrapVersion))
-      _ <- git.push(newRepoName)
-      _ <- git.pushTags(newRepoName)
+      _    <- git.cloneRepoURL(repoUrl)
+      _    <- if(enableTravis) git.commitFileToRoot(newRepoName, ".travis.yml", buildTravisYamlTemplate(newRepoName), CommitUserName, CommitUserEmail) else Try(Unit)
+      _    <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
+      _    <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, repositoryType, enableTravis, privateRepo), CommitUserName, CommitUserEmail)
+      _    <- git.commitFileToRoot(newRepoName, "repository.yaml", getManifestContents(digitalServiceName), CommitUserName, CommitUserEmail)
+      _    <- git.push(newRepoName)
+      shaO <- if(!privateRepo) git.lastCommitSha(newRepoName) else Try(None)
+      _    <- if(!privateRepo) maybeCreateTag(newRepoName, shaO, BootstrapTagComment, BootstrapTagVersion(bootstrapVersion)) else Try(Unit)
+      _    <- if(!privateRepo) git.pushTags(newRepoName) else Try(Unit)
     } yield Unit
   }
 
