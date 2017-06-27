@@ -103,8 +103,8 @@ trait Github {
                     |    "private": $privateRepo,
                     |    "has_issues": true,
                     |    "has_wiki": true,
-                    |    "has_downloads": true,
-                    |    "license_template": "apache-2.0"
+     ${if(!privateRepo)""""license_template": "apache-2.0",""" else ""}
+                    |    "has_downloads": true
                     |}""".stripMargin
 
     val url = githubUrls.createRepo

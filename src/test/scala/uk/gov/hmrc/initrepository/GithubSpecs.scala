@@ -161,8 +161,8 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
              |    "private": false,
              |    "has_issues": true,
              |    "has_wiki": true,
-             |    "has_downloads": true,
-             |    "license_template": "apache-2.0"
+             |    "license_template": "apache-2.0",
+             |    "has_downloads": true
              |}""".stripMargin)
       )
     }
@@ -190,8 +190,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
              |    "private": true,
              |    "has_issues": true,
              |    "has_wiki": true,
-             |    "has_downloads": true,
-             |    "license_template": "apache-2.0"
+             |    "has_downloads": true
              |}""".stripMargin)
       )
     }
