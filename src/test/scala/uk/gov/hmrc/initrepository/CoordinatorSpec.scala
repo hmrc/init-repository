@@ -70,7 +70,7 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
       when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName, privateRepo = false).await
+      new Coordinator(github, bintray, git, travis).run(repoName, Seq(teamName), RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName, privateRepo = false).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -81,6 +81,66 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       verify(github).createRepo(repoName, privateRepo = false)
       verify(bintray).createPackagesFor(repoName)
       verify(github).addRepoToTeam(repoName, 1)
+
+      // verify travis setup
+      verify(travis).authenticate
+      verify(travis).syncWithGithub(accessToken)
+      verify(travis).searchForRepo(meq(accessToken), meq(repoName))(any())
+      verify(travis).activateHook(accessToken, repoId)
+
+    }
+    "adds multiple teams to the new repo" in {
+
+      val github = mock[Github]
+      val bintray = mock[BintrayService]
+      val git = mock[LocalGitService]
+      val travis = mock[TravisConnector]
+
+      val repoName = "newrepo"
+      val repoId = 2364862
+      val teamName1: String = "teamname"
+      val teamName2: String = "Designers"
+      val repoUrl = "repo-url"
+      val bootstrapTag = "1.0.0"
+
+      // setup pre-conditions
+      when(github.teamId(teamName1)) thenReturn Future.successful(Some(1))
+      when(github.teamId(teamName2)) thenReturn Future.successful(Some(2))
+      when(github.containsRepo(repoName)) thenReturn FutureFalse
+      when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
+
+      // setup repo creation calls
+      when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
+      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
+      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
+      when(github.addRepoToTeam(repoName, 2)) thenReturn Future.successful()
+
+      // setup git calls
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = true, privateRepo = false)) thenReturn Success()
+
+      // setup travis calls
+      val accessToken = "access_token"
+
+      implicit val backoffStrategy = TravisSearchBackoffStrategy(1, 0)
+
+      when(travis.authenticate) thenReturn Future.successful(new TravisAuthenticationResult(accessToken))
+      when(travis.syncWithGithub(accessToken)) thenReturn Future.successful()
+      when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
+      when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
+
+      new Coordinator(github, bintray, git, travis).run(repoName,  Seq(teamName1, teamName2), RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName, privateRepo = false).await
+
+      // verify pre-conditions
+      verify(github).containsRepo(repoName)
+      verify(github, atLeastOnce()).teamId(teamName1)
+      verify(github, atLeastOnce()).teamId(teamName2)
+      verify(bintray).reposContainingPackage(repoName)
+
+      // verify repo creation calls
+      verify(github).createRepo(repoName, privateRepo = false)
+      verify(bintray).createPackagesFor(repoName)
+      verify(github).addRepoToTeam(repoName, 1)
+      verify(github).addRepoToTeam(repoName, 2)
 
       // verify travis setup
       verify(travis).authenticate
@@ -116,7 +176,7 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = false, privateRepo = false)) thenReturn Success()
 
 
-      new Coordinator(github, bintray, git, travis).run(repoName, teamName, RepositoryType.Sbt, bootstrapTag, enableTravis = false, digitalServiceName, privateRepo = false).await
+      new Coordinator(github, bintray, git, travis).run(repoName,  Seq(teamName), RepositoryType.Sbt, bootstrapTag, enableTravis = false, digitalServiceName, privateRepo = false).await
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -162,7 +222,7 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
 
       new Coordinator(github, bintray, git, travis).run(
         newRepoName = repoName,
-        team = teamName,
+        teams =  Seq(teamName),
         repositoryType = RepositoryType.Sbt,
         bootstrapVersion = bootstrapTag,
         enableTravis = false,
@@ -183,5 +243,45 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       verifyZeroInteractions(bintray)
     }
 
+  }
+
+  "checkTeamsExistOnGithub" should {
+    "return true if all provided teams exist on github" in {
+
+      val github = mock[Github]
+      val bintray = mock[BintrayService]
+      val git = mock[LocalGitService]
+      val travis = mock[TravisConnector]
+
+      when(github.teamId("team1")) thenReturn Future.successful(Some(1))
+      when(github.teamId("team2")) thenReturn Future.successful(Some(2))
+
+      new Coordinator(github, bintray, git, travis).checkTeamsExistOnGithub(Seq("team1", "team2")).await shouldBe true
+    }
+
+    "return false if at least one of the provided teams does not exist on github" in {
+
+      val github = mock[Github]
+      val bintray = mock[BintrayService]
+      val git = mock[LocalGitService]
+      val travis = mock[TravisConnector]
+
+      when(github.teamId("team1")) thenReturn Future.successful(Some(1))
+      when(github.teamId("team2")) thenReturn Future.successful(None)
+
+      new Coordinator(github, bintray, git, travis).checkTeamsExistOnGithub(Seq("team1", "team2")).await shouldBe false
+    }
+    "return false if all  of the provided teams do not exist on github" in {
+
+      val github = mock[Github]
+      val bintray = mock[BintrayService]
+      val git = mock[LocalGitService]
+      val travis = mock[TravisConnector]
+
+      when(github.teamId("team1")) thenReturn Future.successful(None)
+      when(github.teamId("team2")) thenReturn Future.successful(None)
+
+      new Coordinator(github, bintray, git, travis).checkTeamsExistOnGithub(Seq("team1", "team2")).await shouldBe false
+    }
   }
 }

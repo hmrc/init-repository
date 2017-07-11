@@ -29,7 +29,7 @@ class ArgParserSpec extends WordSpec with Matchers {
 
       ArgParser.parser.parse(args, Config()).get shouldBe Config (
         repoName = "repoName",
-        teamName = "teamName",
+        teamNames = Seq("teamName"),
         repoType = RepositoryType.Sbt,
         bootStrapTagName = "1.0.0",
         verbose = true,
@@ -43,14 +43,21 @@ class ArgParserSpec extends WordSpec with Matchers {
 
       var args = Array("""repoName teamName Sbt""".split(" "): _*)
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "0.1.0", false, false)
+      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName"), RepositoryType.Sbt, "0.1.0", false, false)
     }
 
     "create config by evaluating empty boot strap tag to default boot strap tag number" in {
 
       val args = Array("repoName","teamName", "Sbt"," ")
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", "teamName", RepositoryType.Sbt, "0.1.0", false, false)
+      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName"), RepositoryType.Sbt, "0.1.0", false, false)
+    }
+
+    "create config with multiple team names" in {
+
+      val args = Array("repoName","teamName1, teamName2", "Sbt"," ")
+
+      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName1", "teamName2"), RepositoryType.Sbt, "0.1.0", false, false)
     }
 
     "fail if correct boot strap version format is not provided" in {

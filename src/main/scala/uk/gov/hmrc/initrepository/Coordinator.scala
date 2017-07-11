@@ -29,13 +29,13 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, enableTravis: Boolean, digitalServiceName: Option[String], privateRepo: Boolean): Future[Unit] = {
-    checkPreConditions(newRepoName, team, privateRepo).flatMap { error =>
+  def run(newRepoName: String, teams: Seq[String], repositoryType: RepositoryType, bootstrapVersion: String, enableTravis: Boolean, digitalServiceName: Option[String], privateRepo: Boolean): Future[Unit] = {
+    checkPreConditions(newRepoName, teams, privateRepo).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
 
         for {
-          repoUrl <- initGitRepo(newRepoName, team, repositoryType, bootstrapVersion, digitalServiceName, enableTravis, privateRepo)
+          repoUrl <- initGitRepo(newRepoName, teams, repositoryType, bootstrapVersion, digitalServiceName, enableTravis, privateRepo)
           _       <- initBintray(newRepoName, privateRepo)
           _       <- initTravis(newRepoName, enableTravis)
         } yield repoUrl
@@ -49,15 +49,26 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     }
   }
 
-  private def initGitRepo(newRepoName: String, team: String, repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String], enableTravis: Boolean, privateRepo: Boolean): Future[String] =
+  private def initGitRepo(newRepoName: String, teams: Seq[String], repositoryType: RepositoryType, bootstrapVersion: String, digitalServiceName: Option[String], enableTravis: Boolean, privateRepo: Boolean): Future[String] =
     for {
-      teamId <- github.teamId(team)
       repoUrl <- github.createRepo(newRepoName, privateRepo)
-      _ <- exponentialRetry(10) {
-        addRepoToTeam(newRepoName, teamId)
-      }
+      _ <- addTeamsToGitRepo(teams, newRepoName)
       _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion, digitalServiceName, enableTravis, privateRepo))
     } yield repoUrl
+
+  private def addTeamsToGitRepo(teamNames: Seq[String], newRepoName: String): Future[Seq[Unit]] = {
+
+    val x: Seq[Future[Unit]] = teamNames.map { teamName =>
+      val teamIdFuture: Future[Option[Int]] =  github.teamId(teamName)
+
+      teamIdFuture.flatMap { teamId =>
+        exponentialRetry(10) {
+          addRepoToTeam(newRepoName, teamId)
+        }
+      }
+    }
+    Future.sequence(x)
+  }
 
   private def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {
     teamIdO.map { teamId =>
@@ -96,14 +107,19 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     }
   }
 
-  private def checkPreConditions(newRepoName: String, team: String, privateRepo: Boolean): Future[PreConditionError[String]] = {
-    for (repoExists <- github.containsRepo(newRepoName);
-         existingPackages <- if(privateRepo) Future.successful(Set.empty) else bintray.reposContainingPackage(newRepoName);
-         teamExists <- github.teamId(team).map(_.isDefined))
-      yield {
+  def checkTeamsExistOnGithub(teamNames: Seq[String]): Future[Boolean] = {
+    Future.sequence(teamNames.map(team => github.teamId(team))).map(_.flatten).map(_.size == teamNames.size)
+  }
+
+  private def checkPreConditions(newRepoName: String, teams: Seq[String], privateRepo: Boolean): Future[PreConditionError[String]] = {
+    for {
+      repoExists <- github.containsRepo(newRepoName)
+      existingPackages <- if (privateRepo) Future.successful(Set.empty) else bintray.reposContainingPackage(newRepoName)
+      teamsExist <- checkTeamsExistOnGithub(teams)
+    } yield {
         if (repoExists) Some(s"Repository with name '$newRepoName' already exists in github ")
         else if (existingPackages.nonEmpty) Some(s"The following bintray packages already exist: '${existingPackages.mkString(",")}'")
-        else if (!teamExists) Some(s"Team with name '$team' could not be found in github")
+        else if (!teamsExist) Some(s"One of the provided team names ('${teams.mkString(",")}') could not be found in github")
         else None
       }
   }

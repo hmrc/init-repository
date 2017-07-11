@@ -27,7 +27,7 @@ object ArgParser {
 
   case class Config(
                      repoName: String = "",
-                     teamName: String = "",
+                     teamNames: Seq[String] = Nil,
                      repoType: RepositoryType = RepositoryType.Sbt,
                      bootStrapTagName: String = DEFAULT_BOOTSTRAP_TAG,
                      verbose: Boolean = false,
@@ -51,9 +51,9 @@ object ArgParser {
       c.copy(repoName = x)
     } text "the name of the github repository"
 
-    arg[String]("team-name") action { (x, c) =>
-      c.copy(teamName = x)
-    } text "the github team name"
+    arg[Seq[String]]("team-names").abbr("tns") action { (x, c) =>
+      c.copy(teamNames = x.map(_.trim))
+    } text "the github team name(s)"
 
     arg[RepositoryType]("repository-type") action { (x, c) =>
       c.copy(repoType = x)

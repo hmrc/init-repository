@@ -130,7 +130,7 @@ object Main extends ToolsSupport {
 
       try {
         val result = new Coordinator(github, bintray, git, travis)
-          .run(config.repoName, config.teamName, config.repoType, config.bootStrapTagName, config.enableTravis, config.digitalServiceName, config.privateRepo)
+          .run(config.repoName, config.teamNames, config.repoType, config.bootStrapTagName, config.enableTravis, config.digitalServiceName, config.privateRepo)
 
         Await.result(result, Duration(120, TimeUnit.SECONDS))
       } finally {
