@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import org.scalatest.{Matchers, WordSpec}
+import play.api.libs.json.Json
 import uk.gov.hmrc.initrepository.wiremock.{GithubWireMocks, WireMockEndpoints}
 
 
@@ -85,7 +86,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     "find a team ID for a team name when the team exists" in {
       givenGitHubExpects(
         method = GET,
-        url = urls.teams,
+        url = urls.teams(),
         extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
         willRespondWith = (200, Some(
           """
@@ -108,10 +109,49 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
       github.teamId("Auth").await.get shouldBe 2
     }
 
+    "support pagination" in {
+
+      val page1 = 1 to 100 map { id =>
+        Team(id, s"https://api.github.com/teams/$id", s"Team $id")
+      }
+      val page2 = 101 to 200 map { id =>
+        Team(id, s"https://api.github.com/teams/$id", s"Team $id")
+      }
+      val page3 = 201 to 250 map { id =>
+        Team(id, s"https://api.github.com/teams/$id", s"Team $id")
+      }
+
+      givenGitHubExpects(
+        method = GET,
+        url = urls.teams(),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        willRespondWith = (200, Some(Json.toJson(page1).toString))
+      )
+
+      givenGitHubExpects(
+        method = GET,
+        url = new URL(urls.teams().toString + "&page=2"),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        willRespondWith = (200, Some(Json.toJson(page2).toString))
+      )
+
+      givenGitHubExpects(
+        method = GET,
+        url = new URL(urls.teams().toString + "&page=3"),
+        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        willRespondWith = (200, Some(Json.toJson(page3).toString))
+      )
+
+      printMappings()
+      1 to 250  foreach { id =>
+        github.teamId(s"Team $id").await shouldBe Some(id)
+      }
+    }
+
     "return None when the team does not exist" in {
       givenGitHubExpects(
         method = GET,
-        url = urls.teams,
+        url = urls.teams(),
         extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
         willRespondWith = (200, Some(
           """
@@ -216,6 +256,10 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
       )
     }
   }
+
+
+  case class Team(id: Int, url: String, name: String)
+  implicit val f = Json.format[Team]
 
   case class GithubRequest(method:RequestMethod, url:String, body:Option[String]){
     def req:RequestPatternBuilder = {

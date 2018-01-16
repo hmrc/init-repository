@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,39 +23,56 @@ import play.api.libs.json._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class GithubUrls( orgName:String = "hmrc",
-                  apiRoot:String = "https://api.github.com"){
+class GithubUrls(orgName: String = "hmrc",
+                 apiRoot: String = "https://api.github.com") {
+
+  val PAGE_SIZE = 100
 
   def createRepo: URL =
     new URL(s"$apiRoot/orgs/$orgName/repos")
 
-  def containsRepo(repo:String) =
+  def containsRepo(repo: String) =
     new URL(s"$apiRoot/repos/$orgName/$repo")
 
-  def teams =
-    new URL(s"$apiRoot/orgs/$orgName/teams?per_page=100")
+  def teams(page: Int = 1) =
+    new URL(s"$apiRoot/orgs/$orgName/teams?per_page=$PAGE_SIZE&page=$page")
 
-  def addTeamToRepo(repoName:String, teamId:Int) =
+  def addTeamToRepo(repoName: String, teamId: Int) =
     new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName?permission=push")
 }
 
 trait Github {
 
-  def httpTransport:HttpTransport
+  def httpTransport: HttpTransport
 
-  def githubUrls:GithubUrls
+  def githubUrls: GithubUrls
 
   val IronManApplication = "application/vnd.github.ironman-preview+json"
 
-  def teamId(team: String): Future[Option[Int]]={
-    val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.teams)
+  def teamId(teamName: String): Future[Option[Int]] = {
+    allTeams().map { teams =>
+      teams.find(_.name == teamName).map(_.id)
+    }
+  }
 
-    Log.debug(req.toString)
+  private def allTeams(page: Int = 1): Future[Seq[Team]] = {
 
-    req.execute().flatMap { res => res.status match {
-      case 200 => Future.successful(findIdForName(res.json, team))
-      case _   => Future.failed(new RequestException(req, res))
-    }}
+    implicit val format = Json.format[Team]
+
+    val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.teams(page))
+
+    val aPageOfTeams = req.execute().flatMap { res =>
+      res.status match {
+        case 200 => Future.successful(res.json.as[Seq[Team]])
+        case _ => Future.failed(new RequestException(req, res))
+      }
+    }
+
+    aPageOfTeams.flatMap { currentPage =>
+      if (currentPage.size == githubUrls.PAGE_SIZE) {
+        allTeams(page + 1).map { nextPage => currentPage ++ nextPage }
+      } else Future.successful(currentPage)
+    }
   }
 
   def addRepoToTeam(repoName: String, teamId: Int):Future[Unit] = {
@@ -75,7 +92,7 @@ trait Github {
     }}
   }
 
-  def findIdForName(json:JsValue, teamName:String):Option[Int]={
+  def findIdForName(json: JsValue, teamName: String): Option[Int] = {
     json.as[JsArray].value
       .find(j => (j \ "name").toOption.exists(s => s.as[JsString].value == teamName))
       .map(j => (j \ "id").get.as[JsNumber].value.toInt)
@@ -124,4 +141,6 @@ trait Github {
   def close() = httpTransport.close()
 }
 
-case class SimpleResponse(status:Int, rawBody:String)
+case class SimpleResponse(status: Int, rawBody: String)
+
+case class Team(name: String, id: Int)
