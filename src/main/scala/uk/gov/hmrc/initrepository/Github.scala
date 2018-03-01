@@ -106,6 +106,7 @@ trait Github {
 
     req.execute().flatMap { res => res.status match {
       case 200 => Future.successful(true)
+      case 301 => Future.successful(false)
       case 404 => Future.successful(false)
       case _   => Future.failed(new RequestException(req, res))
     }}
