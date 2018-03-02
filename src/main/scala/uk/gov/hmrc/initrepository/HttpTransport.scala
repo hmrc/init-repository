@@ -52,6 +52,7 @@ trait HttpTransport {
     val urlWithoutQuery = url.toString.split('?').head
     val req = ws.url(urlWithoutQuery)
       .withMethod(method)
+      .withFollowRedirects(false)
 
     Function.chain(Seq(
       applyBody(body) _,
