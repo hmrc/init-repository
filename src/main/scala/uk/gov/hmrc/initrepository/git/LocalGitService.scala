@@ -94,6 +94,8 @@ class LocalGitService(git: LocalGitStore) {
       |*.iws
       |node_modules/
       |npm-debug.log
+      |yarn-debug.log
+      |yarn-error.log
       |
     """.stripMargin
   }
