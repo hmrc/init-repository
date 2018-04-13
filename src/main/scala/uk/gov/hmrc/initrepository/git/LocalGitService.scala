@@ -92,6 +92,10 @@ class LocalGitService(git: LocalGitStore) {
       |/RUNNING_PID
       |/.settings
       |*.iws
+      |node_modules/
+      |npm-debug.log
+      |yarn-debug.log
+      |yarn-error.log
       |
     """.stripMargin
   }
