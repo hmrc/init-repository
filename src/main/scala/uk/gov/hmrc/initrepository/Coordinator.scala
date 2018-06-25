@@ -53,26 +53,39 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
     for {
       repoUrl <- github.createRepo(newRepoName, privateRepo)
       _ <- addTeamsToGitRepo(teams, newRepoName)
+      _ <- addRepoAdminsTeamToGitRepo(newRepoName)
       _ <- tryToFuture(git.initialiseRepository(repoUrl, repositoryType, bootstrapVersion, digitalServiceName, enableTravis, privateRepo))
     } yield repoUrl
 
   private def addTeamsToGitRepo(teamNames: Seq[String], newRepoName: String): Future[Seq[Unit]] = {
 
     val x: Seq[Future[Unit]] = teamNames.map { teamName =>
-      val teamIdFuture: Future[Option[Int]] =  github.teamId(teamName)
+      val teamIdFuture: Future[Option[Int]] = github.teamId(teamName)
 
       teamIdFuture.flatMap { teamId =>
         exponentialRetry(10) {
-          addRepoToTeam(newRepoName, teamId)
+          addRepoToTeam(newRepoName, teamId, "push")
         }
       }
     }
     Future.sequence(x)
   }
 
-  private def addRepoToTeam(repoName: String, teamIdO: Option[Int]): Future[Unit] = {
+  private def addRepoAdminsTeamToGitRepo(newRepoName: String): Future[Unit] = {
+
+    val teamName = "Repository Admins"
+    val teamIdFuture: Future[Option[Int]] = github.teamId(teamName)
+
+    teamIdFuture.flatMap { teamId =>
+      exponentialRetry(10) {
+        addRepoToTeam(newRepoName, teamId, "admin")
+      }
+    }
+  }
+
+  private def addRepoToTeam(repoName: String, teamIdO: Option[Int], permission: String): Future[Unit] = {
     teamIdO.map { teamId =>
-      github.addRepoToTeam(repoName, teamIdO.get)
+      github.addRepoToTeam(repoName, teamIdO.get, permission)
     }.getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
   }
 
@@ -85,16 +98,16 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
         newRepoId <- travis.searchForRepo(authentication.accessToken, newRepoName)
         _ <- travis.activateHook(authentication.accessToken, newRepoId)
       } yield Unit
-    else{
+    else {
       Log.info(s"Skipping travis integration")
       Future.successful(())
     }
   }
 
   private def initBintray(newRepoName: String, privateRepo: Boolean): Future[Unit] = {
-    if(privateRepo) {
+    if (privateRepo) {
       Log.info(s"Skipping Bintray packages creation as this is a private repository")
-      Future.successful()
+      Future.successful(())
     } else bintray.createPackagesFor(newRepoName)
   }
 
@@ -117,10 +130,10 @@ class Coordinator(github: Github, bintray: BintrayService, git: LocalGitService,
       existingPackages <- if (privateRepo) Future.successful(Set.empty) else bintray.reposContainingPackage(newRepoName)
       teamsExist <- checkTeamsExistOnGithub(teams)
     } yield {
-        if (repoExists) Some(s"Repository with name '$newRepoName' already exists in github ")
-        else if (existingPackages.nonEmpty) Some(s"The following bintray packages already exist: '${existingPackages.mkString(",")}'")
-        else if (!teamsExist) Some(s"One of the provided team names ('${teams.mkString(",")}') could not be found in github")
-        else None
-      }
+      if (repoExists) Some(s"Repository with name '$newRepoName' already exists in github ")
+      else if (existingPackages.nonEmpty) Some(s"The following bintray packages already exist: '${existingPackages.mkString(",")}'")
+      else if (!teamsExist) Some(s"One of the provided team names ('${teams.mkString(",")}') could not be found in github")
+      else None
+    }
   }
 }

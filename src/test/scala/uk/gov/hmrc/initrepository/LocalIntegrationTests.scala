@@ -40,11 +40,11 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
           Future.successful(s"${bareOriginGitStoreDir.toString}/$repoName")
         override def containsRepo(repoName: String): Future[Boolean] = Future.successful(false)
         override def teamId(team: String): Future[Option[Int]] = Future.successful(Some(1))
-        override def addRepoToTeam(repoName: String, teamId: Int): Future[Unit] = Future.successful(Unit)
+        override def addRepoToTeam(repoName: String, teamId: Int, permission: String): Future[Unit] = Future.successful(Unit)
       }
 
       val bintray = new BintrayService {
-        override def createPackagesFor(newPackageName:String):Future[Unit]= Future.successful(true)
+        override def createPackagesFor(newPackageName:String):Future[Unit]= Future.successful(())
         override def reposContainingPackage(newPackageName:String):Future[Set[String]]=Future.successful(Set())
         override lazy val repositories: Set[String] = ???
         override def bintray: Bintray = ???
@@ -67,9 +67,9 @@ class LocalIntegrationTests extends WordSpec with Matchers with FutureValues wit
         override def travisUrls: TravisUrls = ???
 
         override def authenticate: Future[TravisAuthenticationResult] = Future.successful(new TravisAuthenticationResult("access_token"))
-        override def syncWithGithub(accessToken: String): Future[Unit] = Future.successful()
+        override def syncWithGithub(accessToken: String): Future[Unit] = Future.successful(())
         override def searchForRepo(accessToken: String, repositoryName: String)(implicit backoffStrategy: TravisSearchBackoffStrategy) : Future[Int] = Future.successful(123456)
-        override def activateHook(accessToken: String, repositoryId: Int): Future[Unit] = Future.successful()
+        override def activateHook(accessToken: String, repositoryId: Int): Future[Unit] = Future.successful(())
       }
 
       val newRepoName = "test-repos"

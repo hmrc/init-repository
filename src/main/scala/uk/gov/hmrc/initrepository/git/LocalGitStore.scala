@@ -18,14 +18,10 @@ package uk.gov.hmrc.initrepository.git
 
 import java.nio.file.{Files, Path}
 
-
 import org.apache.commons.io.FileUtils
 import uk.gov.hmrc.initrepository.Log
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Try}
+import scala.util.{Success, Try}
 
 object Git{
   def sshUrl(name:String, orgName:String) = s"git@github.com:$orgName/$name.git".toLowerCase
@@ -64,7 +60,7 @@ class LocalGitStore(workspace:Path) {
     * Does NOT create/write file if the fileContents are None
     */
   def commitFileToRoot(repoName: String, fileName:String, fileContent: Option[String], user:String, email:String): Try[Unit]= {
-    fileContent.map(commitFileToRoot(repoName, fileName, _, user, email)).getOrElse(Try())
+    fileContent.map(commitFileToRoot(repoName, fileName, _, user, email)).getOrElse(Success(()))
   }
 
   def commitFileToRoot(repoName: String, fileName:String, fileContent: String, user:String, email:String): Try[Unit]= {

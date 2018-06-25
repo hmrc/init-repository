@@ -75,14 +75,14 @@ trait Github {
     }
   }
 
-  def addRepoToTeam(repoName: String, teamId: Int):Future[Unit] = {
-    Log.info(s"Adding $repoName to team ${teamId}")
+  def addRepoToTeam(repoName: String, teamId: Int, permission: String):Future[Unit] = {
+    Log.info(s"Adding $repoName to team $teamId")
 
     val req = httpTransport
       .buildJsonCallWithAuth("PUT", githubUrls.addTeamToRepo(repoName, teamId))
       .withHeaders("Accept" -> IronManApplication)
       .withHeaders("Content-Length" -> "0")
-      .withBody("""{"permission": "push"}"""")
+      .withBody(s"""{"permission": "$permission"}"""")
 
     Log.debug(req.toString)
 

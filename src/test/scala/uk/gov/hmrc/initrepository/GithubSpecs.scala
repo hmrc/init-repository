@@ -246,7 +246,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
       )
 
       printMappings()
-      github.addRepoToTeam(repoName, 99).awaitSuccess()
+      github.addRepoToTeam(repoName, 99, "push").awaitSuccess()
 
       assertRequest(
         method = PUT,

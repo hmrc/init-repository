@@ -49,16 +49,18 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+      when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
       when(github.containsRepo(repoName)) thenReturn FutureFalse
       when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
-      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
-      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
+      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = true, privateRepo = false)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = true, privateRepo = false)) thenReturn Success(())
 
       // setup travis calls
       val accessToken = "access_token"
@@ -66,9 +68,9 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       implicit val backoffStrategy = TravisSearchBackoffStrategy(1, 0)
 
       when(travis.authenticate) thenReturn Future.successful(new TravisAuthenticationResult(accessToken))
-      when(travis.syncWithGithub(accessToken)) thenReturn Future.successful()
+      when(travis.syncWithGithub(accessToken)) thenReturn Future.successful(())
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
-      when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
+      when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful(())
 
       new Coordinator(github, bintray, git, travis).run(repoName, Seq(teamName), RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName, privateRepo = false).await
 
@@ -80,7 +82,7 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = false)
       verify(bintray).createPackagesFor(repoName)
-      verify(github).addRepoToTeam(repoName, 1)
+      verify(github).addRepoToTeam(repoName, 1, "push")
 
       // verify travis setup
       verify(travis).authenticate
@@ -89,7 +91,7 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       verify(travis).activateHook(accessToken, repoId)
 
     }
-    "adds multiple teams to the new repo" in {
+    "adds multiple teams to the new repo, including the Repository Admins team" in {
 
       val github = mock[Github]
       val bintray = mock[BintrayService]
@@ -106,17 +108,19 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       // setup pre-conditions
       when(github.teamId(teamName1)) thenReturn Future.successful(Some(1))
       when(github.teamId(teamName2)) thenReturn Future.successful(Some(2))
+      when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
       when(github.containsRepo(repoName)) thenReturn FutureFalse
       when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
-      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
-      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
-      when(github.addRepoToTeam(repoName, 2)) thenReturn Future.successful()
+      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 2, "push")) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = true, privateRepo = false)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = true, privateRepo = false)) thenReturn Success(())
 
       // setup travis calls
       val accessToken = "access_token"
@@ -124,9 +128,9 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       implicit val backoffStrategy = TravisSearchBackoffStrategy(1, 0)
 
       when(travis.authenticate) thenReturn Future.successful(new TravisAuthenticationResult(accessToken))
-      when(travis.syncWithGithub(accessToken)) thenReturn Future.successful()
+      when(travis.syncWithGithub(accessToken)) thenReturn Future.successful(())
       when(travis.searchForRepo(meq(accessToken), meq(repoName))(any())) thenReturn Future.successful(repoId)
-      when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful()
+      when(travis.activateHook(accessToken, repoId)) thenReturn Future.successful(())
 
       new Coordinator(github, bintray, git, travis).run(repoName,  Seq(teamName1, teamName2), RepositoryType.Sbt, bootstrapTag, enableTravis = true, digitalServiceName, privateRepo = false).await
 
@@ -139,8 +143,9 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = false)
       verify(bintray).createPackagesFor(repoName)
-      verify(github).addRepoToTeam(repoName, 1)
-      verify(github).addRepoToTeam(repoName, 2)
+      verify(github).addRepoToTeam(repoName, 1, "push")
+      verify(github).addRepoToTeam(repoName, 2, "push")
+      verify(github).addRepoToTeam(repoName, 10, "admin")
 
       // verify travis setup
       verify(travis).authenticate
@@ -164,16 +169,18 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+      when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
       when(github.containsRepo(repoName)) thenReturn FutureFalse
       when(bintray.reposContainingPackage(repoName)) thenReturn Future.successful(Set[String]())
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
-      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful()
-      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
+      when(bintray.createPackagesFor(repoName)) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = false, privateRepo = false)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = false, privateRepo = false)) thenReturn Success(())
 
 
       new Coordinator(github, bintray, git, travis).run(repoName,  Seq(teamName), RepositoryType.Sbt, bootstrapTag, enableTravis = false, digitalServiceName, privateRepo = false).await
@@ -186,7 +193,7 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = false)
       verify(bintray).createPackagesFor(repoName)
-      verify(github).addRepoToTeam(repoName, 1)
+      verify(github).addRepoToTeam(repoName, 1, "push")
 
       // verify no travis
       verifyZeroInteractions(travis)
@@ -210,14 +217,16 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+      when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
       when(github.containsRepo(repoName)) thenReturn FutureFalse
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = true)) thenReturn Future.successful(repoUrl)
-      when(github.addRepoToTeam(repoName, 1)) thenReturn Future.successful()
+      when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
+      when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = false, privateRepo)) thenReturn Success()
+      when(git.initialiseRepository(repoUrl, RepositoryType.Sbt, bootstrapTag, digitalServiceName, enableTravis = false, privateRepo)) thenReturn Success(())
 
 
       new Coordinator(github, bintray, git, travis).run(
@@ -236,7 +245,7 @@ class CoordinatorSpec extends WordSpec with Matchers with FutureValues with Befo
 
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = true)
-      verify(github).addRepoToTeam(repoName, 1)
+      verify(github).addRepoToTeam(repoName, 1, "push")
 
       // verify no travis
       verifyZeroInteractions(travis)
