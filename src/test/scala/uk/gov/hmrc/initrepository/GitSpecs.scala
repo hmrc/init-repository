@@ -18,22 +18,27 @@ package uk.gov.hmrc.initrepository
 
 import java.nio.file.{Files, Path, Paths}
 
-import uk.gov.hmrc.initrepository.git.LocalGitStore
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
+import uk.gov.hmrc.initrepository.git.LocalGitStore
 
 import scala.collection.JavaConversions._
-import scala.util.{Failure, Success, Try}
 
-
-class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValues with TryValues with BeforeAndAfterEach{
+class GitSpecs
+    extends WordSpec
+    with Matchers
+    with ScalaFutures
+    with OptionValues
+    with TryValues
+    with BeforeAndAfterEach {
 
   val thisProjectsPath = Paths.get(".").toAbsolutePath.normalize()
-  val thisRepoName = thisProjectsPath.getFileName.toString
+  val thisRepoName     = thisProjectsPath.getFileName.toString
 
-  var tempDir:Path = _
-  var git:LocalGitStore = _
+  var tempDir: Path      = _
+  var git: LocalGitStore = _
 
-  override def beforeEach(): Unit ={
+  override def beforeEach(): Unit = {
     tempDir = Files.createTempDirectory("init-repository-git-store-").toAbsolutePath
     println(s"tempDir = $tempDir")
     git = new LocalGitStore(tempDir)
@@ -54,16 +59,15 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
       storePath2.resolve("test-repo").resolve(".git").toFile.isDirectory shouldBe true
     }
   }
-  
-  def cloneThisRepo(git:LocalGitStore, targetDir:Path): Unit ={
+
+  def cloneThisRepo(git: LocalGitStore, targetDir: Path): Unit =
     git.cloneRepoURL(thisProjectsPath.toString)
-  }
 
   "Git.lastCommitSha" should {
     "get last commit sha " in {
       repoWithOneCommit("test-repo", "README.md")
 
-      git.commitCount("test-repo").get shouldBe 1
+      git.commitCount("test-repo").get                  shouldBe 1
       git.lastCommitSha("test-repo").get.value.length() shouldBe 40
     }
   }
@@ -88,13 +92,13 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
     }
   }
 
-  def repoWithOneCommit(name:String, fileName:String): Unit ={
+  def repoWithOneCommit(name: String, fileName: String): Unit = {
     GitRepoConfig.withNameConfig(git, name) {
       git.init(name)
     }
 
     //to satisfy git on travis while running the tests
-    
+
     git.commitFileToRoot(name, "README.md", fileContent = "Some useful info.", "user", "email")
   }
 
@@ -106,11 +110,11 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
         "test-repo",
         "README.md",
         fileContent = "Some useful info.",
-        user = "hmrc-web-operations",
-        email = "hmrc-web-operations@digital.hmrc.gov.uk")
+        user        = "hmrc-web-operations",
+        email       = "hmrc-web-operations@digital.hmrc.gov.uk")
 
-      git.commitCount("test-repo").get shouldBe 1
-      git.lastCommitUser("test-repo").get.get shouldBe "hmrc-web-operations"
+      git.commitCount("test-repo").get                                                shouldBe 1
+      git.lastCommitUser("test-repo").get.get                                         shouldBe "hmrc-web-operations"
       Files.readAllLines(tempDir.resolve("test-repo").resolve("README.md")).head.trim shouldBe "Some useful info."
     }
   }

@@ -16,26 +16,18 @@
 
 package uk.gov.hmrc.initrepository
 
-import uk.gov.hmrc.initrepository.RepositoryType.RepositoryType
-
 object ArgParser {
 
-  implicit val RepositoryTypeRead: scopt.Read[RepositoryType.Value] =
-    scopt.Read.reads(RepositoryType withName _)
-
-  val DEFAULT_BOOTSTRAP_TAG = "0.1.0"
-
   case class Config(
-                     repoName: String = "",
-                     teamNames: Seq[String] = Nil,
-                     repoType: RepositoryType = RepositoryType.Sbt,
-                     bootStrapTagName: String = DEFAULT_BOOTSTRAP_TAG,
-                     verbose: Boolean = false,
-                     enableTravis: Boolean = false,
-                     digitalServiceName: Option[String] = None,
-                     privateRepo: Boolean = false
-                   )
-
+    repository: String                 = "",
+    isPrivate: Boolean                 = false,
+    teams: Seq[String]                 = Nil,
+    bootStrapTag: Option[String]       = None,
+    verbose: Boolean                   = false,
+    digitalServiceName: Option[String] = None,
+    githubUsername: String             = "",
+    githubPassword: String             = ""
+  )
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
 
@@ -45,42 +37,41 @@ object ArgParser {
 
     head(s"\nInit-Repository", s"$currentVersion\n")
 
-    help("help") text "prints this usage text"
-
-    arg[String]("repo-name") action { (x, c) =>
-      c.copy(repoName = x)
+    arg[String]("repository") action { (x, c) =>
+      c.copy(repository = x)
     } text "the name of the github repository"
 
-    arg[Seq[String]]("team-names").abbr("tns") action { (x, c) =>
-      c.copy(teamNames = x.map(_.trim))
+    help("help") text "prints this usage text"
+
+    opt[Seq[String]]("teams") action { (x, c) =>
+      c.copy(teams = x.map(_.trim))
     } text "the github team name(s)"
 
-    arg[RepositoryType]("repository-type") action { (x, c) =>
-      c.copy(repoType = x)
-    } text s"type of repository (${RepositoryType.values.map(_.toString).mkString(", ")}})"
-
-    opt[Unit]("private") action { (x, c) =>
-      c.copy(privateRepo = true)
-    } text "creates a private repository. Default is public"
-
-    opt[String]("digital-service-name").abbr("dsn").optional() action { (x, c) =>
-      c.copy(digitalServiceName = Option(x))
-    } text s"Digital service name"
-
-    arg[String]("bootstrap-tag") optional() action { (x, c) =>
-      c.copy(bootStrapTagName = if (x.trim.isEmpty) DEFAULT_BOOTSTRAP_TAG else x)
+    opt[String]("bootstrap-tag").optional() action { (x, c) =>
+      c.copy(bootStrapTag = Option(x))
     } validate (x =>
       if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
         success
       else
-        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
-      ) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
+        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
 
-    opt[Unit]("enable-travis") action { (x, c) =>
-      c.copy(enableTravis = true)
-    } text "whether to enable travis integration"
+    opt[Unit]("private") action { (x, c) =>
+      c.copy(isPrivate = true)
+    } text "creates a private repository. Default is public"
 
-    opt[Unit]('v', "verbose") action { (x, c) =>
+    opt[String]("digital-service-name").optional() action { (x, c) =>
+      c.copy(digitalServiceName = Option(x))
+    } text s"Digital service name"
+
+    opt[String]("github-username") required () action { (x, c) =>
+      c.copy(githubUsername = x)
+    } text "github username"
+
+    opt[String]("github-password") required () action { (x, c) =>
+      c.copy(githubPassword = x)
+    } text "github password"
+
+    opt[Unit]("verbose") action { (x, c) =>
       c.copy(verbose = true)
     } text "verbose mode (debug logging)"
   }

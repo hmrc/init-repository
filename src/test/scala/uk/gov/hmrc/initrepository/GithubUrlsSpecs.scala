@@ -18,7 +18,6 @@ package uk.gov.hmrc.initrepository
 
 import org.scalatest.{Matchers, WordSpec}
 
-
 class GithubUrlsSpecs extends WordSpec with Matchers {
 
   "GithubUrls.containsRepo" should {
@@ -33,4 +32,4 @@ class GithubUrlsSpecs extends WordSpec with Matchers {
     }
   }
 
- }
+}

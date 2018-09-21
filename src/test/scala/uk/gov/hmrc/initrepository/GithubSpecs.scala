@@ -22,23 +22,32 @@ import com.github.tomakehurst.wiremock.client.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
+import com.ning.http.util.Base64
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.Json
 import uk.gov.hmrc.initrepository.wiremock.{GithubWireMocks, WireMockEndpoints}
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
-class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMockEndpoints with GithubWireMocks {
+class GithubSpecs
+    extends WordSpec
+    with Matchers
+    with ScalaFutures
+    with WireMockEndpoints
+    with GithubWireMocks
+    with IntegrationPatience {
 
-  val transport = new HttpTransport {
-    override def creds: ServiceCredentials = ServiceCredentials("", "")
-  }
+  val basicAuthHeader = "Basic " + Base64.encode("my-user:my-password".getBytes())
+  val transport       = new HttpTransport("my-user", "my-password")
 
   val github: Github = new Github {
     override def httpTransport: HttpTransport = transport
-    override def githubUrls: GithubUrls = urls
+    override def githubUrls: GithubUrls       = urls
   }
 
-  val urls = new GithubUrls(apiRoot = endpointMockUrl)
+  val urls     = new GithubUrls(apiRoot = endpointMockUrl)
   val repoName = "domain"
 
   "Github.containsRepo" should {
@@ -46,38 +55,38 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     "return true when github returns 200" in {
 
       givenGitHubExpects(
-        method = GET,
-        url = urls.containsRepo(repoName),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = GET,
+        url             = urls.containsRepo(repoName),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (200, None)
       )
 
-      github.containsRepo(repoName).await shouldBe true
+      github.containsRepo(repoName).futureValue shouldBe true
     }
 
     "return false when github returns 404" in {
 
       givenGitHubExpects(
-        method = GET,
-        url = urls.containsRepo(repoName),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = GET,
+        url             = urls.containsRepo(repoName),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (404, None)
       )
 
-      github.containsRepo(repoName).await shouldBe false
+      github.containsRepo(repoName).futureValue shouldBe false
     }
 
     "throw exception when github returns anything other than 200 or 404" in {
 
       givenGitHubExpects(
-        method = GET,
-        url = urls.containsRepo(repoName),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = GET,
+        url             = urls.containsRepo(repoName),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (999, None)
       )
 
-      intercept[RequestException]{
-        github.containsRepo(repoName).await
+      intercept[RequestException] {
+        Await.result(github.containsRepo(repoName), 5 seconds)
       }
     }
   }
@@ -85,11 +94,12 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
   "Github.teamId" should {
     "find a team ID for a team name when the team exists" in {
       givenGitHubExpects(
-        method = GET,
-        url = urls.teams(),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
-        willRespondWith = (200, Some(
-          """
+        method       = GET,
+        url          = urls.teams(),
+        extraHeaders = Map("Authorization" -> basicAuthHeader),
+        willRespondWith = (
+          200,
+          Some("""
             |[
             |  {
             |    "id": 1,
@@ -106,7 +116,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
       )
 
       printMappings()
-      github.teamId("Auth").await.get shouldBe 2
+      github.teamId("Auth").futureValue.get shouldBe 2
     }
 
     "support pagination" in {
@@ -122,39 +132,40 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
       }
 
       givenGitHubExpects(
-        method = GET,
-        url = urls.teams(),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = GET,
+        url             = urls.teams(),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (200, Some(Json.toJson(page1).toString))
       )
 
       givenGitHubExpects(
-        method = GET,
-        url = new URL(urls.teams().toString + "&page=2"),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = GET,
+        url             = new URL(urls.teams().toString + "&page=2"),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (200, Some(Json.toJson(page2).toString))
       )
 
       givenGitHubExpects(
-        method = GET,
-        url = new URL(urls.teams().toString + "&page=3"),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = GET,
+        url             = new URL(urls.teams().toString + "&page=3"),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (200, Some(Json.toJson(page3).toString))
       )
 
       printMappings()
-      1 to 250  foreach { id =>
-        github.teamId(s"Team $id").await shouldBe Some(id)
+      1 to 250 foreach { id =>
+        github.teamId(s"Team $id").futureValue shouldBe Some(id)
       }
     }
 
     "return None when the team does not exist" in {
       givenGitHubExpects(
-        method = GET,
-        url = urls.teams(),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
-        willRespondWith = (200, Some(
-          """
+        method       = GET,
+        url          = urls.teams(),
+        extraHeaders = Map("Authorization" -> basicAuthHeader),
+        willRespondWith = (
+          200,
+          Some("""
             |[
             |  {
             |    "id": 1,
@@ -171,7 +182,7 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
       )
 
       printMappings()
-      github.teamId("MDTP").await shouldBe None
+      github.teamId("MDTP").futureValue shouldBe None
     }
   }
 
@@ -180,21 +191,19 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     "successfully create a public repo" in {
 
       givenGitHubExpects(
-        method = POST,
-        url = urls.createRepo,
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = POST,
+        url             = urls.createRepo,
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (201, None)
       )
 
-      val createdUrl = github.createRepo(repoName, privateRepo = false).await
-
+      val createdUrl = github.createRepo(repoName, privateRepo = false).futureValue
       createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
 
       assertRequest(
         method = POST,
-        url = urls.createRepo,
-        body = Some(
-          s"""{
+        url    = urls.createRepo,
+        body   = Some(s"""{
              |    "name": "$repoName",
              |    "description": "",
              |    "homepage": "",
@@ -209,21 +218,20 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
     "successfully create a private repo" in {
 
       givenGitHubExpects(
-        method = POST,
-        url = urls.createRepo,
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = POST,
+        url             = urls.createRepo,
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (201, None)
       )
 
-      val createdUrl = github.createRepo(repoName, privateRepo = true).await
+      val createdUrl = github.createRepo(repoName, privateRepo = true).futureValue
 
       createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
 
       assertRequest(
         method = POST,
-        url = urls.createRepo,
-        body = Some(
-          s"""{
+        url    = urls.createRepo,
+        body   = Some(s"""{
              |    "name": "$repoName",
              |    "description": "",
              |    "homepage": "",
@@ -239,56 +247,61 @@ class GithubSpecs extends WordSpec with Matchers with FutureValues with WireMock
   "Github.addRepoToTeam" should {
     "add a repository to a team in" in {
       givenGitHubExpects(
-        method = PUT,
-        url = urls.addTeamToRepo(repoName, 99),
-        extraHeaders = Map("Authorization" -> transport.creds.toBasicAuth),
+        method          = PUT,
+        url             = urls.addTeamToRepo(repoName, 99),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
         willRespondWith = (204, None)
       )
 
       printMappings()
-      github.addRepoToTeam(repoName, 99, "push").awaitSuccess()
+      val future = github.addRepoToTeam(repoName, 99, "push")
+      Await.result(future, 5.seconds)
+      future.value.get.isSuccess shouldBe true
 
       assertRequest(
-        method = PUT,
-        url = urls.addTeamToRepo(repoName, 99),
+        method       = PUT,
+        url          = urls.addTeamToRepo(repoName, 99),
         extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
-        body = Some("""{"permission": "push"}""")
+        body         = Some("""{"permission": "push"}""")
       )
     }
   }
 
-
   case class Team(id: Int, url: String, name: String)
   implicit val f = Json.format[Team]
 
-  case class GithubRequest(method:RequestMethod, url:String, body:Option[String]){
-    def req:RequestPatternBuilder = {
+  case class GithubRequest(method: RequestMethod, url: String, body: Option[String]) {
+    def req: RequestPatternBuilder = {
       val builder = new RequestPatternBuilder(method, urlEqualTo(url))
-      body.map{ b =>
-        builder.withRequestBody(equalToJson(b))
-      }.getOrElse(builder)
+      body
+        .map { b =>
+          builder.withRequestBody(equalToJson(b))
+        }
+        .getOrElse(builder)
     }
   }
 
   def assertRequest(
-    method:RequestMethod,
-    url:URL,
-    extraHeaders:Map[String,String] = Map(),
-    body:Option[String]): Unit = {
+    method: RequestMethod,
+    url: URL,
+    extraHeaders: Map[String, String] = Map(),
+    body: Option[String]): Unit = {
 
     val builder = new RequestPatternBuilder(method, urlPathEqualTo(url.getPath))
-    extraHeaders.foreach { case(k, v) =>
-      builder.withHeader(k, equalTo(v))
+    extraHeaders.foreach {
+      case (k, v) =>
+        builder.withHeader(k, equalTo(v))
     }
 
-    body.map { b =>
-      builder.withRequestBody(equalToJson(b))
-    }.getOrElse(builder)
+    body
+      .map { b =>
+        builder.withRequestBody(equalToJson(b))
+      }
+      .getOrElse(builder)
 
     endpointMock.verifyThat(builder)
   }
 
-  def assertRequest(req:GithubRequest): Unit ={
+  def assertRequest(req: GithubRequest): Unit =
     endpointMock.verifyThat(req.req)
-  }
 }
