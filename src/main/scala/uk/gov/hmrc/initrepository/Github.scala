@@ -95,13 +95,6 @@ trait Github {
     }
   }
 
-  def findIdForName(json: JsValue, teamName: String): Option[Int] =
-    json
-      .as[JsArray]
-      .value
-      .find(j => (j \ "name").toOption.exists(s => s.as[JsString].value == teamName))
-      .map(j => (j \ "id").get.as[JsNumber].value.toInt)
-
   def containsRepo(repoName: String): Future[Boolean] = {
     val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.containsRepo(repoName))
 

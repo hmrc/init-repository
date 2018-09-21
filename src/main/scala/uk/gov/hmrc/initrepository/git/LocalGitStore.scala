@@ -23,14 +23,7 @@ import uk.gov.hmrc.initrepository.Log
 
 import scala.util.{Success, Try}
 
-object Git {
-  def sshUrl(name: String, orgName: String) = s"git@github.com:$orgName/$name.git".toLowerCase
-
-}
-
 class LocalGitStore(workspace: Path) {
-
-  val orgName = "HMRC"
 
   val gitCommand = Command.run("which git").get.head.trim
 
