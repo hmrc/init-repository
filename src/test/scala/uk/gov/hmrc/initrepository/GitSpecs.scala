@@ -18,14 +18,14 @@ package uk.gov.hmrc.initrepository
 
 import java.nio.file.{Files, Path, Paths}
 
-import uk.gov.hmrc.initrepository.git.LocalGitStore
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
+import uk.gov.hmrc.initrepository.git.LocalGitStore
 
 import scala.collection.JavaConversions._
-import scala.util.{Failure, Success, Try}
 
 
-class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValues with TryValues with BeforeAndAfterEach{
+class GitSpecs extends WordSpec with Matchers with ScalaFutures with OptionValues with TryValues with BeforeAndAfterEach{
 
   val thisProjectsPath = Paths.get(".").toAbsolutePath.normalize()
   val thisRepoName = thisProjectsPath.getFileName.toString
@@ -64,27 +64,6 @@ class GitSpecs extends WordSpec with Matchers with FutureValues with OptionValue
       repoWithOneCommit("test-repo", "README.md")
 
       git.commitCount("test-repo").get shouldBe 1
-      git.lastCommitSha("test-repo").get.value.length() shouldBe 40
-    }
-  }
-
-  "Git.tagCommit" should {
-    "tag a given commit" in {
-      repoWithOneCommit("test-repo", "README.md")
-
-      val lastCommit = git.lastCommitSha("test-repo").get.get
-
-      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "v0.1.0")
-      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
-    }
-
-    "tag a given commit with a leading 'v' in the version number if it is missed off" in {
-      repoWithOneCommit("test-repo", "README.md")
-
-      val lastCommit = git.lastCommitSha("test-repo").get.value
-
-      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "0.1.0")
-      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
     }
   }
 

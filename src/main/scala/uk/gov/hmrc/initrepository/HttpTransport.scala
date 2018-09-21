@@ -22,9 +22,7 @@ import play.api.libs.json.JsValue
 import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient, NingWSClientConfig}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 
-trait HttpTransport {
-
-  def creds:ServiceCredentials
+class HttpTransport(username: String, password: String) {
 
   private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new NingWSClientConfig()).build())
 
@@ -61,6 +59,6 @@ trait HttpTransport {
   }
 
   def buildJsonCallWithAuth(method:String, url:URL, body:Option[JsValue] = None): WSRequest =
-    buildJsonCall(method, url, body).withAuth(creds.user, creds.pass, WSAuthScheme.BASIC)
+    buildJsonCall(method, url, body).withAuth(username, password, WSAuthScheme.BASIC)
 
 }

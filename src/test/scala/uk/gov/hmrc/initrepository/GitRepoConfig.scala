@@ -16,10 +16,18 @@
 
 package uk.gov.hmrc.initrepository
 
-import play.api.libs.ws.{WSRequest, WSResponse}
+import uk.gov.hmrc.initrepository.git.LocalGitStore
 
-class RequestException(request:WSRequest, response:WSResponse)
-  extends Exception(s"Got status ${response.status}: ${request.method} ${request.url} ${response.body}")
 
-class TravisSearchException(repositoryName: String)
-  extends Exception(s"Repository '$repositoryName' was not found in travis")
+object GitRepoConfig {
+  //to satisfy git on travis while running the tests
+  def withNameConfig[T](store : LocalGitStore, reponame: String)(f : => T ) : T = {
+
+    val result = f
+
+    store.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(reponame)).map { _ => Unit }
+    store.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(reponame)).map { _ => Unit }
+
+    result
+  }
+}

@@ -38,22 +38,8 @@ class LocalGitStore(workspace:Path) {
     Log.info(s"using git CLI version $version")
   }
 
-  def lastCommitSha(repoName: String):Try[Option[String]]={
-    git("rev-parse HEAD", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
-  }
-
   def lastCommitUser(repoName: String):Try[Option[String]]={
     git("log --pretty=format:%an", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
-  }
-
-  def lastTag(repoName: String):Try[Option[String]]={
-    git("describe --abbrev=0", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
-  }
-
-  def tagAnnotatedCommit(repoName: String, sha: String, tag:String, version:String):Try[Unit] = {
-    Log.info(s"creating tag for $repoName, sha : $sha, tagName : $tag, version : $version")
-    val versionWithPrefix = "v" + version.stripPrefix("v")
-    gitCommandParts(Array("tag", "-a", "-m", "Bootstrap tag",  versionWithPrefix), inRepo = Some(repoName)).map { _ => Unit }
   }
 
   /**
@@ -83,10 +69,6 @@ class LocalGitStore(workspace:Path) {
 
   def push(repoName:String): Try[Unit] ={
     Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map { _ => Unit }
-  }
-
-  def pushTags(repoName:String): Try[Unit] ={
-    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map { _ => Unit }
   }
 
   def commitCount(repoName:String):Try[Int]={

@@ -19,6 +19,7 @@ package uk.gov.hmrc.initrepository
 import java.net.URL
 
 import play.api.libs.json._
+import play.api.libs.ws.{WSRequest, WSResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -132,9 +133,9 @@ trait Github {
 
     req.execute().flatMap { case result =>
       result.status match {
-        case s if s >= 200 && s < 300 => Future.successful(s"git@github.com:hmrc/$repoName.git")
+        case s if s >= 200 && s < 300 => Future.successful(s"https://github.com/hmrc/$repoName")
         case _@e => Future.failed(new scala.Exception(
-          s"Didn't get expected status code when writing to ${url}. Got status ${result.status}: POST ${url} ${result.body}"))
+          s"Didn't get expected status code when writing to $url. Got status ${result.status}: POST $url ${result.body}"))
       }
     }
   }
@@ -145,3 +146,6 @@ trait Github {
 case class SimpleResponse(status: Int, rawBody: String)
 
 case class Team(name: String, id: Int)
+
+class RequestException(request:WSRequest, response:WSResponse)
+  extends Exception(s"Got status ${response.status}: ${request.method} ${request.url} ${response.body}")

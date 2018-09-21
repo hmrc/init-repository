@@ -25,46 +25,29 @@ class ArgParserSpec extends WordSpec with Matchers {
   "ArgParser" should {
     "create correct config" in {
 
-      val args = Array("""repoName teamName Sbt 1.0.0 -v --enable-travis --private""".split(" "): _*)
+      val args = Array("""--verbose --private --github-username my-user --github-password my-pass repoName teamName""".split(" "): _*)
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config (
+      ArgParser.parser.parse(args, Config()) shouldBe Some(Config(
         repoName = "repoName",
+        privateRepo = true,
         teamNames = Seq("teamName"),
-        repoType = RepositoryType.Sbt,
-        bootStrapTagName = "1.0.0",
         verbose = true,
-        enableTravis = true,
-        privateRepo = true
-      )
-    }
-
-    "create config with default bootstrap version of 0.1.0 if none provided" in {
-
-
-      var args = Array("""repoName teamName Sbt""".split(" "): _*)
-
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName"), RepositoryType.Sbt, "0.1.0", false, false)
-    }
-
-    "create config by evaluating empty boot strap tag to default boot strap tag number" in {
-
-      val args = Array("repoName","teamName", "Sbt"," ")
-
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName"), RepositoryType.Sbt, "0.1.0", false, false)
+        githubUsername = "my-user",
+        githubPassword = "my-pass"
+      ))
     }
 
     "create config with multiple team names" in {
 
-      val args = Array("repoName","teamName1, teamName2", "Sbt"," ")
+      val args = Array("""--github-username my-user --github-password my-pass repoName teamName1,teamName2""".split(" "): _*)
 
-      ArgParser.parser.parse(args, Config()).get shouldBe Config("repoName", Seq("teamName1", "teamName2"), RepositoryType.Sbt, "0.1.0", false, false)
-    }
-
-    "fail if correct boot strap version format is not provided" in {
-
-      val args = Array("""repoName teamName Sbt v1.0.0""".split(" "): _*)
-
-      ArgParser.parser.parse(args, Config()) shouldBe None
+      ArgParser.parser.parse(args, Config()) shouldBe Some(Config(
+        repoName = "repoName",
+        privateRepo = false,
+        teamNames = Seq("teamName1", "teamName2"),
+        githubUsername = "my-user",
+        githubPassword = "my-pass"
+      ))
     }
   }
 
