@@ -78,9 +78,6 @@ class LocalGitService(git: LocalGitStore) {
     bootstrapTag: Option[String],
     privateRepo: Boolean): Try[Unit] = {
 
-    def getManifestContents(digitalServiceName: Option[String]) =
-      digitalServiceName.map(dsn => s"digital-service: $dsn")
-
     val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
     for {
       _ <- git.cloneRepoURL(repoUrl)
@@ -94,7 +91,7 @@ class LocalGitService(git: LocalGitStore) {
       _ <- git.commitFileToRoot(
             newRepoName,
             "repository.yaml",
-            getManifestContents(digitalServiceName),
+            digitalServiceName.map(dsn => s"digital-service: $dsn"),
             CommitUserName,
             CommitUserEmail)
       _    <- git.push(newRepoName)

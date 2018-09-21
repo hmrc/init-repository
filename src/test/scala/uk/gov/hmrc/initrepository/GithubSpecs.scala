@@ -192,8 +192,7 @@ class GithubSpecs extends WordSpec with Matchers with ScalaFutures with WireMock
       )
 
       val createdUrl = github.createRepo(repoName, privateRepo = false).futureValue
-
-      createdUrl shouldBe s"https://github.com/hmrc/$repoName"
+      createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
 
       assertRequest(
         method = POST,
@@ -221,7 +220,7 @@ class GithubSpecs extends WordSpec with Matchers with ScalaFutures with WireMock
 
       val createdUrl = github.createRepo(repoName, privateRepo = true).futureValue
 
-      createdUrl shouldBe s"https://github.com/hmrc/$repoName"
+      createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
 
       assertRequest(
         method = POST,

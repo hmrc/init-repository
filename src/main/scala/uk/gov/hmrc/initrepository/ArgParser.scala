@@ -37,11 +37,11 @@ object ArgParser {
 
     head(s"\nInit-Repository", s"$currentVersion\n")
 
-    help("help") text "prints this usage text"
-
     arg[String]("repository") action { (x, c) =>
       c.copy(repository = x)
     } text "the name of the github repository"
+
+    help("help") text "prints this usage text"
 
     opt[Seq[String]]("teams") action { (x, c) =>
       c.copy(teams = x.map(_.trim))
