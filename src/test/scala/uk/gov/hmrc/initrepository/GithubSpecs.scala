@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.http.RequestMethod._
 import com.ning.http.util.Base64
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.Json
 import uk.gov.hmrc.initrepository.wiremock.{GithubWireMocks, WireMockEndpoints}
@@ -31,7 +31,13 @@ import uk.gov.hmrc.initrepository.wiremock.{GithubWireMocks, WireMockEndpoints}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class GithubSpecs extends WordSpec with Matchers with ScalaFutures with WireMockEndpoints with GithubWireMocks {
+class GithubSpecs
+    extends WordSpec
+    with Matchers
+    with ScalaFutures
+    with WireMockEndpoints
+    with GithubWireMocks
+    with IntegrationPatience {
 
   val basicAuthHeader = "Basic " + Base64.encode("my-user:my-password".getBytes())
   val transport       = new HttpTransport("my-user", "my-password")
