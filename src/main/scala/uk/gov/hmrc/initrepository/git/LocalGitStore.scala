@@ -23,47 +23,55 @@ import uk.gov.hmrc.initrepository.Log
 
 import scala.util.{Success, Try}
 
-object Git{
-  def sshUrl(name:String, orgName:String) = s"git@github.com:$orgName/$name.git".toLowerCase
+object Git {
+  def sshUrl(name: String, orgName: String) = s"git@github.com:$orgName/$name.git".toLowerCase
 
 }
 
-class LocalGitStore(workspace:Path) {
+class LocalGitStore(workspace: Path) {
 
   val orgName = "HMRC"
 
   val gitCommand = Command.run("which git").get.head.trim
 
-  git("--version").map{ _.headOption.getOrElse("<no output from git>")}.foreach { version =>
+  git("--version").map { _.headOption.getOrElse("<no output from git>") }.foreach { version =>
     Log.info(s"using git CLI version $version")
   }
 
-  def lastCommitSha(repoName: String):Try[Option[String]]={
+  def lastCommitSha(repoName: String): Try[Option[String]] =
     git("rev-parse HEAD", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
-  }
 
-  def lastCommitUser(repoName: String):Try[Option[String]]={
+  def lastCommitUser(repoName: String): Try[Option[String]] =
     git("log --pretty=format:%an", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
-  }
 
-  def lastTag(repoName: String):Try[Option[String]]={
+  def lastTag(repoName: String): Try[Option[String]] =
     git("describe --abbrev=0", inRepo = Some(repoName)).map(_.headOption.map(_.trim()))
-  }
 
-  def tagAnnotatedCommit(repoName: String, sha: String, tag:String, version:String):Try[Unit] = {
+  def tagAnnotatedCommit(repoName: String, sha: String, tag: String, version: String): Try[Unit] = {
     Log.info(s"creating tag for $repoName, sha : $sha, tagName : $tag, version : $version")
     val versionWithPrefix = "v" + version.stripPrefix("v")
-    gitCommandParts(Array("tag", "-a", "-m", "Bootstrap tag",  versionWithPrefix), inRepo = Some(repoName)).map { _ => Unit }
+    gitCommandParts(Array("tag", "-a", "-m", "Bootstrap tag", versionWithPrefix), inRepo = Some(repoName)).map { _ =>
+      Unit
+    }
   }
 
   /**
     * Does NOT create/write file if the fileContents are None
     */
-  def commitFileToRoot(repoName: String, fileName:String, fileContent: Option[String], user:String, email:String): Try[Unit]= {
+  def commitFileToRoot(
+    repoName: String,
+    fileName: String,
+    fileContent: Option[String],
+    user: String,
+    email: String): Try[Unit] =
     fileContent.map(commitFileToRoot(repoName, fileName, _, user, email)).getOrElse(Success(()))
-  }
 
-  def commitFileToRoot(repoName: String, fileName:String, fileContent: String, user:String, email:String): Try[Unit]= {
+  def commitFileToRoot(
+    repoName: String,
+    fileName: String,
+    fileContent: String,
+    user: String,
+    email: String): Try[Unit] = {
     val target: Path = workspace.resolve(repoName).resolve(fileName)
     if (!target.toFile.exists()) {
       target.toFile.createNewFile()
@@ -72,53 +80,64 @@ class LocalGitStore(workspace:Path) {
     Files.write(target, fileContent.getBytes("UTF-8"))
 
     git(s"add .", inRepo = Some(repoName)).flatMap { r =>
-      gitCommandParts(Array(
-        "-c", s"user.email=$email",
-        "-c", s"user.name=$user",
-        "commit",
-        s"""-madding $fileName"""
-      ), inRepo = Some(repoName)).map { _ => Unit }
+      gitCommandParts(
+        Array(
+          "-c",
+          s"user.email=$email",
+          "-c",
+          s"user.name=$user",
+          "commit",
+          s"""-madding $fileName"""
+        ),
+        inRepo = Some(repoName)).map { _ =>
+        Unit
+      }
     }
   }
 
-  def push(repoName:String): Try[Unit] ={
-    Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map { _ => Unit }
-  }
+  def push(repoName: String): Try[Unit] =
+    Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map { _ =>
+      Unit
+    }
 
-  def pushTags(repoName:String): Try[Unit] ={
-    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map { _ => Unit }
-  }
+  def pushTags(repoName: String): Try[Unit] =
+    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map { _ =>
+      Unit
+    }
 
-  def commitCount(repoName:String):Try[Int]={
+  def commitCount(repoName: String): Try[Int] =
     git("rev-list HEAD --count", inRepo = Some(repoName)).map(_.head.trim.toInt)
-  }
 
-  def gitCommandParts(commandParts:Array[String], inRepo:Option[String] = None):Try[List[String]]={
+  def gitCommandParts(commandParts: Array[String], inRepo: Option[String] = None): Try[List[String]] = {
     val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
     Command.runArray(gitCommand +: commandParts, inDir = Some(cwd))
   }
 
-  def git(command:String, inRepo:Option[String] = None):Try[List[String]]={
+  def git(command: String, inRepo: Option[String] = None): Try[List[String]] = {
     val cwd = inRepo.map(r => workspace.resolve(r)).getOrElse(workspace)
     Command.run(s"$gitCommand $command", inDir = Some(cwd))
   }
 
-  def init(name:String, isBare:Boolean = false):Try[Unit]={
-    val bareFlag = if(isBare) "--bare " else ""
-    git(s"init $bareFlag$name").map { _ => Unit }
+  def init(name: String, isBare: Boolean = false): Try[Unit] = {
+    val bareFlag = if (isBare) "--bare " else ""
+    git(s"init $bareFlag$name").map { _ =>
+      Unit
+    }
   }
 
   def cloneRepoURL(url: String): Try[Unit] = {
     val name: String = getRepoNameFromUrl(url)
-    val targetDir = workspace.resolve(name)
+    val targetDir    = workspace.resolve(name)
 
     Log.info(s"cloning $url into $targetDir")
 
-    while(targetDir.toFile.exists()) {
+    while (targetDir.toFile.exists()) {
       FileUtils.deleteDirectory(targetDir.toFile)
     }
 
-    git(s"clone $url") map { _ => Unit }
+    git(s"clone $url") map { _ =>
+      Unit
+    }
   }
 
   def getRepoNameFromUrl(url: String): String = {

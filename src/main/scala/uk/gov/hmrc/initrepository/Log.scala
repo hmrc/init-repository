@@ -19,7 +19,7 @@ package uk.gov.hmrc.initrepository
 import org.slf4j
 import play.api.{Logger, LoggerLike}
 
-object Log extends LoggerLike{
-  val loggerName: String = "init-repository"
+object Log extends LoggerLike {
+  val loggerName: String            = "init-repository"
   override val logger: slf4j.Logger = Logger(loggerName).logger
 }

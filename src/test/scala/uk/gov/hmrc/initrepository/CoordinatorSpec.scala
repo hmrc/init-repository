@@ -25,7 +25,13 @@ import uk.gov.hmrc.initrepository.git.LocalGitService
 import scala.concurrent.Future
 import scala.util.Success
 
-class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with IntegrationPatience with BeforeAndAfterEach with MockitoSugar {
+class CoordinatorSpec
+    extends WordSpec
+    with Matchers
+    with ScalaFutures
+    with IntegrationPatience
+    with BeforeAndAfterEach
+    with MockitoSugar {
 
   val digitalServiceName = Some("digital-service-123")
 
@@ -33,13 +39,13 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
     "run operations in order when calls are successful" in {
 
       val github = mock[Github]
-      val git = mock[LocalGitService]
+      val git    = mock[LocalGitService]
 
-      val repoName = "newrepo"
-      val repoId = 2364862
+      val repoName         = "newrepo"
+      val repoId           = 2364862
       val teamName: String = "teamname"
-      val repoUrl = "repo-url"
-      val bootstrapTag = Some("1.0.0")
+      val repoUrl          = "repo-url"
+      val bootstrapTag     = Some("1.0.0")
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
@@ -52,12 +58,15 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(())
+      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(
+        ())
 
       // setup travis calls
       val accessToken = "access_token"
 
-      new Coordinator(github, git).run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false).futureValue
+      new Coordinator(github, git)
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false)
+        .futureValue
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -71,14 +80,14 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
     "adds multiple teams to the new repo, including the Repository Admins team" in {
 
       val github = mock[Github]
-      val git = mock[LocalGitService]
+      val git    = mock[LocalGitService]
 
-      val repoName = "newrepo"
-      val repoId = 2364862
+      val repoName          = "newrepo"
+      val repoId            = 2364862
       val teamName1: String = "teamname"
       val teamName2: String = "Designers"
-      val repoUrl = "repo-url"
-      val bootstrapTag = Some("1.0.0")
+      val repoUrl           = "repo-url"
+      val bootstrapTag      = Some("1.0.0")
 
       // setup pre-conditions
       when(github.teamId(teamName1)) thenReturn Future.successful(Some(1))
@@ -93,13 +102,15 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(())
+      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(
+        ())
 
       // setup travis calls
       val accessToken = "access_token"
 
-
-      new Coordinator(github, git).run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false).futureValue
+      new Coordinator(github, git)
+        .run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false)
+        .futureValue
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -116,13 +127,13 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
     "run operations without enabling travis if enableTravis is false" in {
 
       val github = mock[Github]
-      val git = mock[LocalGitService]
+      val git    = mock[LocalGitService]
 
-      val repoName = "newrepo"
-      val repoId = 2364862
+      val repoName         = "newrepo"
+      val repoId           = 2364862
       val teamName: String = "teamname"
-      val repoUrl = "repo-url"
-      val bootstrapTag = Some("1.0.0")
+      val repoUrl          = "repo-url"
+      val bootstrapTag     = Some("1.0.0")
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
@@ -135,10 +146,12 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(())
+      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(
+        ())
 
-
-      new Coordinator(github, git).run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false).futureValue
+      new Coordinator(github, git)
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false)
+        .futureValue
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -153,14 +166,14 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
     "creates a private repository and does not integrate with travis and Bintray" in {
 
       val github = mock[Github]
-      val git = mock[LocalGitService]
+      val git    = mock[LocalGitService]
 
-      val repoName = "newrepo"
-      val repoId = 2364862
+      val repoName         = "newrepo"
+      val repoId           = 2364862
       val teamName: String = "teamname"
-      val repoUrl = "repo-url"
-      val bootstrapTag = Some("1.0.0")
-      val privateRepo = true
+      val repoUrl          = "repo-url"
+      val bootstrapTag     = Some("1.0.0")
+      val privateRepo      = true
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
@@ -175,14 +188,15 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       // setup git calls
       when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo)) thenReturn Success(())
 
-
-      new Coordinator(github, git).run(
-        newRepoName = repoName,
-        teams = Seq(teamName),
-        digitalServiceName = digitalServiceName,
-        bootstrapTag = bootstrapTag,
-        privateRepo = privateRepo
-      ).futureValue
+      new Coordinator(github, git)
+        .run(
+          newRepoName        = repoName,
+          teams              = Seq(teamName),
+          digitalServiceName = digitalServiceName,
+          bootstrapTag       = bootstrapTag,
+          privateRepo        = privateRepo
+        )
+        .futureValue
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -200,7 +214,7 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
     "return true if all provided teams exist on github" in {
 
       val github = mock[Github]
-      val git = mock[LocalGitService]
+      val git    = mock[LocalGitService]
 
       when(github.teamId("team1")) thenReturn Future.successful(Some(1))
       when(github.teamId("team2")) thenReturn Future.successful(Some(2))
@@ -211,7 +225,7 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
     "return false if at least one of the provided teams does not exist on github" in {
 
       val github = mock[Github]
-      val git = mock[LocalGitService]
+      val git    = mock[LocalGitService]
 
       when(github.teamId("team1")) thenReturn Future.successful(Some(1))
       when(github.teamId("team2")) thenReturn Future.successful(None)
@@ -221,7 +235,7 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
     "return false if all  of the provided teams do not exist on github" in {
 
       val github = mock[Github]
-      val git = mock[LocalGitService]
+      val git    = mock[LocalGitService]
 
       when(github.teamId("team1")) thenReturn Future.successful(None)
       when(github.teamId("team2")) thenReturn Future.successful(None)

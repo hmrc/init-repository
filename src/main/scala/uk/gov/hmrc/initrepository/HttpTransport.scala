@@ -36,29 +36,34 @@ class HttpTransport(username: String, password: String) {
     pair.head -> pair.last
   }
 
-  private def applyBody(body:Option[JsValue])(req: WSRequest): WSRequest =
-    body.map { b => req.withBody(b) }.getOrElse(req)
+  private def applyBody(body: Option[JsValue])(req: WSRequest): WSRequest =
+    body
+      .map { b =>
+        req.withBody(b)
+      }
+      .getOrElse(req)
 
-  private def applyQueryParams(url: URL)(req: WSRequest): WSRequest = {
+  private def applyQueryParams(url: URL)(req: WSRequest): WSRequest =
     Option(url.getQuery) match {
       case Some(query: String) => req.withQueryString(query.split("&") map expandQueryParam: _*)
-      case _ => req
+      case _                   => req
     }
-  }
 
-  def buildJsonCall(method:String, url:URL, body:Option[JsValue] = None):WSRequest={
+  def buildJsonCall(method: String, url: URL, body: Option[JsValue] = None): WSRequest = {
     val urlWithoutQuery = url.toString.split('?').head
-    val req = ws.url(urlWithoutQuery)
+    val req = ws
+      .url(urlWithoutQuery)
       .withMethod(method)
       .withFollowRedirects(false)
 
-    Function.chain(Seq(
-      applyBody(body) _,
-      applyQueryParams(url) _
-    ))(req)
+    Function.chain(
+      Seq(
+        applyBody(body) _,
+        applyQueryParams(url) _
+      ))(req)
   }
 
-  def buildJsonCallWithAuth(method:String, url:URL, body:Option[JsValue] = None): WSRequest =
+  def buildJsonCallWithAuth(method: String, url: URL, body: Option[JsValue] = None): WSRequest =
     buildJsonCall(method, url, body).withAuth(username, password, WSAuthScheme.BASIC)
 
 }

@@ -27,33 +27,34 @@ import uk.gov.hmrc.initrepository.git.{LocalGitService, LocalGitStore}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-
 object Main {
   def main(args: Array[String]) {
-    ArgParser.parser.parse(args, Config()).fold(throw new IllegalArgumentException("error while parsing provided arguments")) { config =>
-      val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
-      if (config.verbose) {
-        root.setLevel(Level.DEBUG)
-      } else {
-        root.setLevel(Level.INFO)
+    ArgParser.parser
+      .parse(args, Config())
+      .fold(throw new IllegalArgumentException("error while parsing provided arguments")) { config =>
+        val root = LoggerFactory.getLogger(Log.loggerName).asInstanceOf[Logger]
+        if (config.verbose) {
+          root.setLevel(Level.DEBUG)
+        } else {
+          root.setLevel(Level.INFO)
+        }
+
+        val github = new Github {
+          override val httpTransport: HttpTransport = new HttpTransport(config.githubUsername, config.githubPassword)
+          override val githubUrls: GithubUrls       = new GithubUrls()
+        }
+
+        val git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
+
+        try {
+          val result = new Coordinator(github, git)
+            .run(config.repository, config.teams, config.digitalServiceName, config.bootStrapTag, config.isPrivate)
+
+          Await.result(result, Duration(120, TimeUnit.SECONDS))
+        } finally {
+          github.close()
+        }
       }
-
-      val github = new Github {
-        override val httpTransport: HttpTransport = new HttpTransport(config.githubUsername, config.githubPassword)
-        override val githubUrls: GithubUrls = new GithubUrls()
-      }
-
-      val git = new LocalGitService(new LocalGitStore(Files.createTempDirectory("init-repository-git-store-")))
-
-      try {
-        val result = new Coordinator(github, git)
-          .run(config.repository, config.teams, config.digitalServiceName, config.bootStrapTag, config.isPrivate)
-
-        Await.result(result, Duration(120, TimeUnit.SECONDS))
-      } finally {
-        github.close()
-      }
-    }
   }
 
 }

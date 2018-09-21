@@ -29,18 +29,20 @@ import scala.util.Try
 
 object Command {
 
-  def run(cmd:String, inDir:Option[Path] = None):Try[List[String]]= {
+  def run(cmd: String, inDir: Option[Path] = None): Try[List[String]] = {
     val cmdF = Future {
-      val pb = inDir.fold(Process(cmd)) { path => Process(cmd, cwd = path.toFile) }
+      val pb = inDir.fold(Process(cmd)) { path =>
+        Process(cmd, cwd = path.toFile)
+      }
 
       val out = ListBuffer[String]()
       val err = ListBuffer[String]()
 
-      val logger = ProcessLogger((s) => out.append(s), (e) => err.append(e))
+      val logger   = ProcessLogger((s) => out.append(s), (e) => err.append(e))
       val exitCode = pb.!(logger)
 
-      if(exitCode != 0) Log.info(s"got exit code $exitCode from command $cmd")
-      if(err.size > 0)  Log.debug(s"got following output on error stream from command $cmd \n  ${err.mkString("\n  ")}")
+      if (exitCode != 0) Log.info(s"got exit code $exitCode from command $cmd")
+      if (err.size > 0) Log.debug(s"got following output on error stream from command $cmd \n  ${err.mkString("\n  ")}")
 
       Log.debug(s"output form '$cmd' is ${out.toList.mkString("\n")}")
 
@@ -51,18 +53,21 @@ object Command {
     cmdF.value.get
   }
 
-  def runArray(cmd:Array[String], inDir:Option[Path] = None):Try[List[String]]= {
+  def runArray(cmd: Array[String], inDir: Option[Path] = None): Try[List[String]] = {
     val cmdF = Future {
-      val pb = inDir.fold(Process(cmd)) { path => Process(cmd, cwd = path.toFile) }
+      val pb = inDir.fold(Process(cmd)) { path =>
+        Process(cmd, cwd = path.toFile)
+      }
 
       val out = ListBuffer[String]()
       val err = ListBuffer[String]()
 
-      val logger = ProcessLogger((s) => out.append(s), (e) => err.append(e))
+      val logger   = ProcessLogger((s) => out.append(s), (e) => err.append(e))
       val exitCode = pb.!(logger)
 
-      if(exitCode != 0) Log.info(s"got exit code $exitCode from command ${cmd.mkString(" ")}")
-      if(err.size > 0)  Log.error(s"got following output on error stream from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
+      if (exitCode != 0) Log.info(s"got exit code $exitCode from command ${cmd.mkString(" ")}")
+      if (err.size > 0)
+        Log.error(s"got following output on error stream from command ${cmd.mkString(" ")} \n  ${err.mkString("\n  ")}")
 
       out.toList
     }

@@ -26,12 +26,11 @@ trait TravisWireMocks {
   this: WireMockEndpoints =>
 
   def givenTravisExpects(
-    method:RequestMethod,
-    url:URL,
-    payload: Option[String] = None,
-    extraHeaders:Map[String,String] = Map(),
+    method: RequestMethod,
+    url: URL,
+    payload: Option[String]           = None,
+    extraHeaders: Map[String, String] = Map(),
     willRespondWith: (Int, Option[String])) =
-
     expectHttp(
       method,
       url,

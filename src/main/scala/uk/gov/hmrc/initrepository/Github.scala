@@ -24,8 +24,7 @@ import play.api.libs.ws.{WSRequest, WSResponse}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class GithubUrls(orgName: String = "hmrc",
-                 apiRoot: String = "https://api.github.com") {
+class GithubUrls(orgName: String = "hmrc", apiRoot: String = "https://api.github.com") {
 
   val PAGE_SIZE = 100
 
@@ -50,11 +49,10 @@ trait Github {
 
   val IronManApplication = "application/vnd.github.ironman-preview+json"
 
-  def teamId(teamName: String): Future[Option[Int]] = {
+  def teamId(teamName: String): Future[Option[Int]] =
     allTeams().map { teams =>
       teams.find(_.name == teamName).map(_.id)
     }
-  }
 
   private def allTeams(page: Int = 1): Future[Seq[Team]] = {
 
@@ -65,18 +63,20 @@ trait Github {
     val aPageOfTeams = req.execute().flatMap { res =>
       res.status match {
         case 200 => Future.successful(res.json.as[Seq[Team]])
-        case _ => Future.failed(new RequestException(req, res))
+        case _   => Future.failed(new RequestException(req, res))
       }
     }
 
     aPageOfTeams.flatMap { currentPage =>
       if (currentPage.size == githubUrls.PAGE_SIZE) {
-        allTeams(page + 1).map { nextPage => currentPage ++ nextPage }
+        allTeams(page + 1).map { nextPage =>
+          currentPage ++ nextPage
+        }
       } else Future.successful(currentPage)
     }
   }
 
-  def addRepoToTeam(repoName: String, teamId: Int, permission: String):Future[Unit] = {
+  def addRepoToTeam(repoName: String, teamId: Int, permission: String): Future[Unit] = {
     Log.info(s"Adding $repoName to team $teamId")
 
     val req = httpTransport
@@ -87,30 +87,34 @@ trait Github {
 
     Log.debug(req.toString)
 
-    req.execute().flatMap { res => res.status match {
-      case 204 => Future.successful(Unit)
-      case _   => Future.failed(new RequestException(req, res))
-    }}
+    req.execute().flatMap { res =>
+      res.status match {
+        case 204 => Future.successful(Unit)
+        case _   => Future.failed(new RequestException(req, res))
+      }
+    }
   }
 
-  def findIdForName(json: JsValue, teamName: String): Option[Int] = {
-    json.as[JsArray].value
+  def findIdForName(json: JsValue, teamName: String): Option[Int] =
+    json
+      .as[JsArray]
+      .value
       .find(j => (j \ "name").toOption.exists(s => s.as[JsString].value == teamName))
       .map(j => (j \ "id").get.as[JsNumber].value.toInt)
-  }
-
 
   def containsRepo(repoName: String): Future[Boolean] = {
     val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.containsRepo(repoName))
 
     Log.debug(req.toString)
 
-    req.execute().flatMap { res => res.status match {
-      case 200 => Future.successful(true)
-      case 301 => Future.successful(false)
-      case 404 => Future.successful(false)
-      case _   => Future.failed(new RequestException(req, res))
-    }}
+    req.execute().flatMap { res =>
+      res.status match {
+        case 200 => Future.successful(true)
+        case 301 => Future.successful(false)
+        case 404 => Future.successful(false)
+        case _   => Future.failed(new RequestException(req, res))
+      }
+    }
   }
 
   def createRepo(repoName: String, privateRepo: Boolean): Future[String] = {
@@ -122,7 +126,7 @@ trait Github {
                     |    "private": $privateRepo,
                     |    "has_issues": true,
                     |    "has_wiki": true,
-     ${if(!privateRepo)""""license_template": "apache-2.0",""" else ""}
+     ${if (!privateRepo) """"license_template": "apache-2.0",""" else ""}
                     |    "has_downloads": true
                     |}""".stripMargin
 
@@ -131,12 +135,14 @@ trait Github {
 
     Log.debug(req.toString)
 
-    req.execute().flatMap { case result =>
-      result.status match {
-        case s if s >= 200 && s < 300 => Future.successful(s"https://github.com/hmrc/$repoName")
-        case _@e => Future.failed(new scala.Exception(
-          s"Didn't get expected status code when writing to $url. Got status ${result.status}: POST $url ${result.body}"))
-      }
+    req.execute().flatMap {
+      case result =>
+        result.status match {
+          case s if s >= 200 && s < 300 => Future.successful(s"https://github.com/hmrc/$repoName")
+          case _ @e =>
+            Future.failed(new scala.Exception(
+              s"Didn't get expected status code when writing to $url. Got status ${result.status}: POST $url ${result.body}"))
+        }
     }
   }
 
@@ -147,5 +153,5 @@ case class SimpleResponse(status: Int, rawBody: String)
 
 case class Team(name: String, id: Int)
 
-class RequestException(request:WSRequest, response:WSResponse)
-  extends Exception(s"Got status ${response.status}: ${request.method} ${request.url} ${response.body}")
+class RequestException(request: WSRequest, response: WSResponse)
+    extends Exception(s"Got status ${response.status}: ${request.method} ${request.url} ${response.body}")

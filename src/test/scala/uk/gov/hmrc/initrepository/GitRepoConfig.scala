@@ -18,15 +18,18 @@ package uk.gov.hmrc.initrepository
 
 import uk.gov.hmrc.initrepository.git.LocalGitStore
 
-
 object GitRepoConfig {
   //to satisfy git on travis while running the tests
-  def withNameConfig[T](store : LocalGitStore, reponame: String)(f : => T ) : T = {
+  def withNameConfig[T](store: LocalGitStore, reponame: String)(f: => T): T = {
 
     val result = f
 
-    store.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(reponame)).map { _ => Unit }
-    store.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(reponame)).map { _ => Unit }
+    store.gitCommandParts(Array("config", "user.email", "'test@example.com'"), inRepo = Some(reponame)).map { _ =>
+      Unit
+    }
+    store.gitCommandParts(Array("config", "user.name", "'testUser'"), inRepo = Some(reponame)).map { _ =>
+      Unit
+    }
 
     result
   }

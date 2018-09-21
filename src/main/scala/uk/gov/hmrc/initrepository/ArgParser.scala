@@ -19,16 +19,15 @@ package uk.gov.hmrc.initrepository
 object ArgParser {
 
   case class Config(
-                     repository: String = "",
-                     isPrivate: Boolean = false,
-                     teams: Seq[String] = Nil,
-                     bootStrapTag: Option[String] = None,
-                     verbose: Boolean = false,
-                     digitalServiceName: Option[String] = None,
-                     githubUsername: String        = "",
-                     githubPassword: String        = ""
-                   )
-
+    repository: String                 = "",
+    isPrivate: Boolean                 = false,
+    teams: Seq[String]                 = Nil,
+    bootStrapTag: Option[String]       = None,
+    verbose: Boolean                   = false,
+    digitalServiceName: Option[String] = None,
+    githubUsername: String             = "",
+    githubPassword: String             = ""
+  )
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
 
@@ -54,8 +53,7 @@ object ArgParser {
       if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
         success
       else
-        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
-      ) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
+        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
 
     opt[Unit]("private") action { (x, c) =>
       c.copy(isPrivate = true)

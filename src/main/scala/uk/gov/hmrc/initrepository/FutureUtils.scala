@@ -30,13 +30,15 @@ object FutureUtils {
     promise.future
   }
 
-  def exponentialRetry[T](times: Int, duration: Double = 10)(f: => Future[T])(implicit executor: ExecutionContext): Future[T] = {
+  def exponentialRetry[T](times: Int, duration: Double = 10)(f: => Future[T])(
+    implicit executor: ExecutionContext): Future[T] = {
     Log.debug(s"Retrying with delay $duration attempts remaining: $times")
 
-    f recoverWith { case _ if times > 0 =>
-      delay(duration) {
-        exponentialRetry(times - 1, duration * 2)(f)
-      }
+    f recoverWith {
+      case _ if times > 0 =>
+        delay(duration) {
+          exponentialRetry(times - 1, duration * 2)(f)
+        }
     }
   }
 }
