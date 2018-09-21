@@ -27,9 +27,6 @@ import scala.util.Success
 
 class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with IntegrationPatience with BeforeAndAfterEach with MockitoSugar {
 
-  val FutureFalse = Future.successful(false)
-  val FutureUnit = Future.successful(Unit)
-
   val digitalServiceName = Some("digital-service-123")
 
   "Coordinator.run" should {
@@ -42,12 +39,12 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       val repoId = 2364862
       val teamName: String = "teamname"
       val repoUrl = "repo-url"
-      val bootstrapTag = "1.0.0"
+      val bootstrapTag = Some("1.0.0")
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
       when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
-      when(github.containsRepo(repoName)) thenReturn FutureFalse
+      when(github.containsRepo(repoName)) thenReturn Future.successful(false)
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
@@ -55,12 +52,12 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, privateRepo = false)) thenReturn Success(())
+      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(())
 
       // setup travis calls
       val accessToken = "access_token"
 
-      new Coordinator(github, git).run(repoName, Seq(teamName), digitalServiceName, privateRepo = false).futureValue
+      new Coordinator(github, git).run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false).futureValue
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -81,13 +78,13 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       val teamName1: String = "teamname"
       val teamName2: String = "Designers"
       val repoUrl = "repo-url"
-      val bootstrapTag = "1.0.0"
+      val bootstrapTag = Some("1.0.0")
 
       // setup pre-conditions
       when(github.teamId(teamName1)) thenReturn Future.successful(Some(1))
       when(github.teamId(teamName2)) thenReturn Future.successful(Some(2))
       when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
-      when(github.containsRepo(repoName)) thenReturn FutureFalse
+      when(github.containsRepo(repoName)) thenReturn Future.successful(false)
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
@@ -96,13 +93,13 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, privateRepo = false)) thenReturn Success(())
+      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(())
 
       // setup travis calls
       val accessToken = "access_token"
 
 
-      new Coordinator(github, git).run(repoName,  Seq(teamName1, teamName2), digitalServiceName, privateRepo = false).futureValue
+      new Coordinator(github, git).run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false).futureValue
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -125,12 +122,12 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       val repoId = 2364862
       val teamName: String = "teamname"
       val repoUrl = "repo-url"
-      val bootstrapTag = "1.0.0"
+      val bootstrapTag = Some("1.0.0")
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
       when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
-      when(github.containsRepo(repoName)) thenReturn FutureFalse
+      when(github.containsRepo(repoName)) thenReturn Future.successful(false)
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
@@ -138,10 +135,10 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, privateRepo = false)) thenReturn Success(())
+      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(())
 
 
-      new Coordinator(github, git).run(repoName,  Seq(teamName), digitalServiceName, privateRepo = false).futureValue
+      new Coordinator(github, git).run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false).futureValue
 
       // verify pre-conditions
       verify(github).containsRepo(repoName)
@@ -162,13 +159,13 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       val repoId = 2364862
       val teamName: String = "teamname"
       val repoUrl = "repo-url"
-      val bootstrapTag = "1.0.0"
+      val bootstrapTag = Some("1.0.0")
       val privateRepo = true
 
       // setup pre-conditions
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
       when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
-      when(github.containsRepo(repoName)) thenReturn FutureFalse
+      when(github.containsRepo(repoName)) thenReturn Future.successful(false)
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = true)) thenReturn Future.successful(repoUrl)
@@ -176,13 +173,14 @@ class CoordinatorSpec extends WordSpec with Matchers with ScalaFutures with Inte
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, privateRepo)) thenReturn Success(())
+      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo)) thenReturn Success(())
 
 
       new Coordinator(github, git).run(
         newRepoName = repoName,
-        teams =  Seq(teamName),
+        teams = Seq(teamName),
         digitalServiceName = digitalServiceName,
+        bootstrapTag = bootstrapTag,
         privateRepo = privateRepo
       ).futureValue
 

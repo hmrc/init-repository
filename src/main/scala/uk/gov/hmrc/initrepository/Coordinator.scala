@@ -27,7 +27,7 @@ class Coordinator(github: Github, git: LocalGitService) {
 
   type PreConditionError[T] = Option[T]
 
-  def run(newRepoName: String, teams: Seq[String], digitalServiceName: Option[String], privateRepo: Boolean): Future[Unit] = {
+  def run(newRepoName: String, teams: Seq[String], digitalServiceName: Option[String], bootstrapTag: Option[String], privateRepo: Boolean): Future[Unit] = {
     checkPreConditions(newRepoName, teams, privateRepo).flatMap { error =>
       if (error.isEmpty) {
         Log.info(s"Pre-conditions met, creating '$newRepoName'")
@@ -35,7 +35,7 @@ class Coordinator(github: Github, git: LocalGitService) {
           repoUrl <- github.createRepo(newRepoName, privateRepo)
           _ <- addTeamsToGitRepo(teams, newRepoName)
           _ <- addRepoAdminsTeamToGitRepo(newRepoName)
-          _ <- tryToFuture(git.initialiseRepository(repoUrl, digitalServiceName, privateRepo))
+          _ <- tryToFuture(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo))
         } yield repoUrl
       } else {
         Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))

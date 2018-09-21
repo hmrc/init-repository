@@ -16,9 +16,12 @@
 
 package uk.gov.hmrc.initrepository.git
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 class LocalGitService(git: LocalGitStore) {
+
+  val BootstrapTagComment = "Bootstrap tag"
+  val BootstrapTagVersion: String => String = version => s"v$version"
 
   val CommitUserName = "hmrc-web-operations"
   val CommitUserEmail = "hmrc-web-operations@digital.hmrc.gov.uk"
@@ -73,7 +76,7 @@ class LocalGitService(git: LocalGitStore) {
 
 
 
-  def initialiseRepository(repoUrl: String, digitalServiceName: Option[String], privateRepo: Boolean): Try[Unit] = {
+  def initialiseRepository(repoUrl: String, digitalServiceName: Option[String], bootstrapTag: Option[String], privateRepo: Boolean): Try[Unit] = {
 
     def getManifestContents(digitalServiceName: Option[String]) = digitalServiceName.map(dsn => s"digital-service: $dsn")
 
@@ -84,7 +87,17 @@ class LocalGitService(git: LocalGitStore) {
       _    <- git.commitFileToRoot(newRepoName, "README.md", buildReadmeTemplate(newRepoName, privateRepo), CommitUserName, CommitUserEmail)
       _    <- git.commitFileToRoot(newRepoName, "repository.yaml", getManifestContents(digitalServiceName), CommitUserName, CommitUserEmail)
       _    <- git.push(newRepoName)
+      shaO <- if(bootstrapTag.isDefined) git.lastCommitSha(newRepoName) else Try(None)
+      _    <- if(bootstrapTag.isDefined) maybeCreateTag(newRepoName, shaO, BootstrapTagComment, bootstrapTag.get) else Try(Unit)
+      _    <- if(bootstrapTag.isDefined) git.pushTags(newRepoName) else Try(Unit)
     } yield Unit
   }
 
+  def maybeCreateTag(newRepoName: String, shaOpt: Option[String], tagText: String, version: String): Try[Unit] = {
+    shaOpt.map { sha =>
+      git.tagAnnotatedCommit(newRepoName, sha, tagText, version)
+    }.getOrElse {
+      Failure(new IllegalAccessException("Didn't get a valid sha, check the list of commits"))
+    }
+  }
 }

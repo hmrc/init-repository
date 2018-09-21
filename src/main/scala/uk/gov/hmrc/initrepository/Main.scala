@@ -47,7 +47,7 @@ object Main {
 
       try {
         val result = new Coordinator(github, git)
-          .run(config.repoName, config.teamNames, config.digitalServiceName, config.privateRepo)
+          .run(config.repository, config.teams, config.digitalServiceName, config.bootStrapTag, config.isPrivate)
 
         Await.result(result, Duration(120, TimeUnit.SECONDS))
       } finally {

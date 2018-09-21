@@ -64,6 +64,27 @@ class GitSpecs extends WordSpec with Matchers with ScalaFutures with OptionValue
       repoWithOneCommit("test-repo", "README.md")
 
       git.commitCount("test-repo").get shouldBe 1
+      git.lastCommitSha("test-repo").get.value.length() shouldBe 40
+    }
+  }
+
+  "Git.tagCommit" should {
+    "tag a given commit" in {
+      repoWithOneCommit("test-repo", "README.md")
+
+      val lastCommit = git.lastCommitSha("test-repo").get.get
+
+      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "v0.1.0")
+      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
+    }
+
+    "tag a given commit with a leading 'v' in the version number if it is missed off" in {
+      repoWithOneCommit("test-repo", "README.md")
+
+      val lastCommit = git.lastCommitSha("test-repo").get.value
+
+      git.tagAnnotatedCommit("test-repo", lastCommit, "the-tag", "0.1.0")
+      git.lastTag("test-repo").get.value shouldBe "v0.1.0"
     }
   }
 

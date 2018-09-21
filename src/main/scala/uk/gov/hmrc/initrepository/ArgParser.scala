@@ -19,9 +19,10 @@ package uk.gov.hmrc.initrepository
 object ArgParser {
 
   case class Config(
-                     repoName: String = "",
-                     privateRepo: Boolean = false,
-                     teamNames: Seq[String] = Nil,
+                     repository: String = "",
+                     isPrivate: Boolean = false,
+                     teams: Seq[String] = Nil,
+                     bootStrapTag: Option[String] = None,
                      verbose: Boolean = false,
                      digitalServiceName: Option[String] = None,
                      githubUsername: String        = "",
@@ -39,16 +40,25 @@ object ArgParser {
 
     help("help") text "prints this usage text"
 
-    arg[String]("repo-name") action { (x, c) =>
-      c.copy(repoName = x)
+    arg[String]("repository") action { (x, c) =>
+      c.copy(repository = x)
     } text "the name of the github repository"
 
-    arg[Seq[String]]("team-names") action { (x, c) =>
-      c.copy(teamNames = x.map(_.trim))
+    opt[Seq[String]]("teams") action { (x, c) =>
+      c.copy(teams = x.map(_.trim))
     } text "the github team name(s)"
 
+    opt[String]("bootstrap-tag").optional() action { (x, c) =>
+      c.copy(bootStrapTag = Option(x))
+    } validate (x =>
+      if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
+        success
+      else
+        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
+      ) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
+
     opt[Unit]("private") action { (x, c) =>
-      c.copy(privateRepo = true)
+      c.copy(isPrivate = true)
     } text "creates a private repository. Default is public"
 
     opt[String]("digital-service-name").optional() action { (x, c) =>
