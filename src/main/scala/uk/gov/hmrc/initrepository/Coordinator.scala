@@ -32,7 +32,8 @@ class Coordinator(github: Github, git: LocalGitService) {
     teams: Seq[String],
     digitalServiceName: Option[String],
     bootstrapTag: Option[String],
-    privateRepo: Boolean): Future[Unit] =
+    privateRepo: Boolean,
+    githubToken: String): Future[Unit] =
     checkPreConditions(newRepoName, teams, privateRepo)
       .flatMap { error =>
         if (error.isEmpty) {
@@ -41,7 +42,8 @@ class Coordinator(github: Github, git: LocalGitService) {
             repoUrl <- github.createRepo(newRepoName, privateRepo)
             _       <- addTeamsToGitRepo(teams, newRepoName)
             _       <- addRepoAdminsTeamToGitRepo(newRepoName)
-            _       <- tryToFuture(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo))
+            _ <- tryToFuture(
+                  git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken))
           } yield repoUrl
         } else {
           Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))

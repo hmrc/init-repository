@@ -72,13 +72,14 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
       when(store.pushTags(any[String])).thenReturn(Try((): Unit))
 
       service.initialiseRepository(
-        repoUrl            = "git@github.com:hmrc/a-service.git",
+        newRepoName        = "a-service",
         digitalServiceName = None,
         bootstrapTag       = Some("0.1.0"),
-        privateRepo        = true
+        privateRepo        = true,
+        githubToken        = "token"
       )
 
-      verify(store).cloneRepoURL("git@github.com:hmrc/a-service.git")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -117,13 +118,14 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
       when(store.pushTags(any[String])).thenReturn(Try((): Unit))
 
       service.initialiseRepository(
-        repoUrl            = "git@github.com:hmrc/a-service.git",
+        newRepoName        = "a-service",
         digitalServiceName = None,
         bootstrapTag       = Some("0.1.0"),
-        privateRepo        = false
+        privateRepo        = false,
+        githubToken        = "token"
       )
 
-      verify(store).cloneRepoURL("git@github.com:hmrc/a-service.git")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -159,13 +161,14 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
       when(store.push(any[String])).thenReturn(Try((): Unit))
 
       service.initialiseRepository(
-        repoUrl            = "git@github.com:hmrc/a-service.git",
+        newRepoName        = "a-service",
         digitalServiceName = None,
         bootstrapTag       = None,
-        privateRepo        = false
+        privateRepo        = false,
+        githubToken        = "token"
       )
 
-      verify(store).cloneRepoURL("git@github.com:hmrc/a-service.git")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",

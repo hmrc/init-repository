@@ -73,14 +73,15 @@ class LocalGitService(git: LocalGitStore) {
   }
 
   def initialiseRepository(
-    repoUrl: String,
+    newRepoName: String,
     digitalServiceName: Option[String],
     bootstrapTag: Option[String],
-    privateRepo: Boolean): Try[Unit] = {
+    privateRepo: Boolean,
+    githubToken: String): Try[Unit] = {
 
-    val newRepoName = repoUrl.split('/').last.stripSuffix(".git")
+    val url = s"https://$githubToken@github.com/hmrc/$newRepoName"
     for {
-      _ <- git.cloneRepoURL(repoUrl)
+      _ <- git.cloneRepoURL(url)
       _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
       _ <- git.commitFileToRoot(
             newRepoName,

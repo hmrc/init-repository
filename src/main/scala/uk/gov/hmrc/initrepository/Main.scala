@@ -40,7 +40,7 @@ object Main {
         }
 
         val github = new Github {
-          override val httpTransport: HttpTransport = new HttpTransport(config.githubUsername, config.githubPassword)
+          override val httpTransport: HttpTransport = new HttpTransport(config.githubUsername, config.githubToken)
           override val githubUrls: GithubUrls       = new GithubUrls()
         }
 
@@ -48,7 +48,13 @@ object Main {
 
         try {
           val result = new Coordinator(github, git)
-            .run(config.repository, config.teams, config.digitalServiceName, config.bootStrapTag, config.isPrivate)
+            .run(
+              config.repository,
+              config.teams,
+              config.digitalServiceName,
+              config.bootStrapTag,
+              config.isPrivate,
+              config.githubToken)
 
           Await.result(result, Duration(120, TimeUnit.SECONDS))
         } finally {

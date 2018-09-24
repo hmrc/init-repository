@@ -39,8 +39,8 @@ class GithubSpecs
     with GithubWireMocks
     with IntegrationPatience {
 
-  val basicAuthHeader = "Basic " + Base64.encode("my-user:my-password".getBytes())
-  val transport       = new HttpTransport("my-user", "my-password")
+  val basicAuthHeader = "Basic " + Base64.encode("my-user:my-token".getBytes())
+  val transport       = new HttpTransport("my-user", "my-token")
 
   val github: Github = new Github {
     override def httpTransport: HttpTransport = transport
@@ -198,7 +198,7 @@ class GithubSpecs
       )
 
       val createdUrl = github.createRepo(repoName, privateRepo = false).futureValue
-      createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
+      createdUrl shouldBe s"https://github.com/hmrc/$repoName"
 
       assertRequest(
         method = POST,
@@ -226,7 +226,7 @@ class GithubSpecs
 
       val createdUrl = github.createRepo(repoName, privateRepo = true).futureValue
 
-      createdUrl shouldBe s"git@github.com:hmrc/$repoName.git"
+      createdUrl shouldBe s"https://github.com/hmrc/$repoName"
 
       assertRequest(
         method = POST,

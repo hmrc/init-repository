@@ -25,7 +25,7 @@ class ArgParserSpec extends WordSpec with Matchers {
     "create correct config" in {
 
       val args = Array(
-        """--verbose --private --github-username my-user --github-password my-pass --digital-service-name DSN --teams teamName --bootstrap-tag 1.0.0 repoName"""
+        """--verbose --private --github-username my-user --github-token my-pass --digital-service-name DSN --teams teamName --bootstrap-tag 1.0.0 repoName"""
           .split(" "): _*)
 
       ArgParser.parser.parse(args, Config()) shouldBe Some(
@@ -37,14 +37,14 @@ class ArgParserSpec extends WordSpec with Matchers {
           bootStrapTag       = Some("1.0.0"),
           verbose            = true,
           githubUsername     = "my-user",
-          githubPassword     = "my-pass"
+          githubToken        = "my-pass"
         ))
     }
 
     "create config with multiple team names" in {
 
       val args = Array(
-        """--github-username my-user --github-password my-pass --teams teamName1,teamName2 repoName""".split(" "): _*)
+        """--github-username my-user --github-token my-pass --teams teamName1,teamName2 repoName""".split(" "): _*)
 
       ArgParser.parser.parse(args, Config()) shouldBe Some(
         Config(
@@ -53,7 +53,7 @@ class ArgParserSpec extends WordSpec with Matchers {
           teams          = Seq("teamName1", "teamName2"),
           bootStrapTag   = None,
           githubUsername = "my-user",
-          githubPassword = "my-pass"
+          githubToken    = "my-pass"
         ))
     }
   }

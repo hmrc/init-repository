@@ -26,7 +26,7 @@ object ArgParser {
     verbose: Boolean                   = false,
     digitalServiceName: Option[String] = None,
     githubUsername: String             = "",
-    githubPassword: String             = ""
+    githubToken: String                = ""
   )
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
@@ -67,9 +67,9 @@ object ArgParser {
       c.copy(githubUsername = x)
     } text "github username"
 
-    opt[String]("github-password") required () action { (x, c) =>
-      c.copy(githubPassword = x)
-    } text "github password"
+    opt[String]("github-token") required () action { (x, c) =>
+      c.copy(githubToken = x)
+    } text "github token"
 
     opt[Unit]("verbose") action { (x, c) =>
       c.copy(verbose = true)

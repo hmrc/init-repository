@@ -122,7 +122,7 @@ class LocalGitStore(workspace: Path) {
     val name: String = getRepoNameFromUrl(url)
     val targetDir    = workspace.resolve(name)
 
-    Log.info(s"cloning $url into $targetDir")
+    Log.info(s"cloning ${url.replaceFirst("\\/\\/(.*@)", "//")} into $targetDir")
 
     while (targetDir.toFile.exists()) {
       FileUtils.deleteDirectory(targetDir.toFile)

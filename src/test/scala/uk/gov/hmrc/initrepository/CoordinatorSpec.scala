@@ -58,14 +58,11 @@ class CoordinatorSpec
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
         ())
 
-      // setup travis calls
-      val accessToken = "access_token"
-
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false)
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token")
         .futureValue
 
       // verify pre-conditions
@@ -102,14 +99,14 @@ class CoordinatorSpec
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
         ())
 
       // setup travis calls
       val accessToken = "access_token"
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false)
+        .run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false, "github-token")
         .futureValue
 
       // verify pre-conditions
@@ -146,11 +143,11 @@ class CoordinatorSpec
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo = false)) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
         ())
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false)
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token")
         .futureValue
 
       // verify pre-conditions
@@ -186,7 +183,8 @@ class CoordinatorSpec
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoUrl, digitalServiceName, bootstrapTag, privateRepo)) thenReturn Success(())
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo, "github-token")) thenReturn Success(
+        ())
 
       new Coordinator(github, git)
         .run(
@@ -194,7 +192,8 @@ class CoordinatorSpec
           teams              = Seq(teamName),
           digitalServiceName = digitalServiceName,
           bootstrapTag       = bootstrapTag,
-          privateRepo        = privateRepo
+          privateRepo        = privateRepo,
+          githubToken        = "github-token"
         )
         .futureValue
 
