@@ -41,6 +41,25 @@ class ArgParserSpec extends WordSpec with Matchers {
         ))
     }
 
+    "ignore optional params when empty values are provided" in {
+
+      val args = Array(
+        """--verbose --private --github-username my-user --github-token my-pass --digital-service-name  --teams my-team --bootstrap-tag  repoName"""
+          .split(" "): _*)
+
+      ArgParser.parser.parse(args, Config()) shouldBe Some(
+        Config(
+          repository         = "repoName",
+          isPrivate          = true,
+          teams              = Seq("my-team"),
+          digitalServiceName = None,
+          bootStrapTag       = None,
+          verbose            = true,
+          githubUsername     = "my-user",
+          githubToken        = "my-pass"
+        ))
+    }
+
     "create config with multiple team names" in {
 
       val args = Array(

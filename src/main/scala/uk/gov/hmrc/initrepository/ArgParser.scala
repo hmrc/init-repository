@@ -48,7 +48,7 @@ object ArgParser {
     } text "the github team name(s)"
 
     opt[String]("bootstrap-tag").optional() action { (x, c) =>
-      c.copy(bootStrapTag = Option(x))
+      c.copy(bootStrapTag = Option(x.trim).filter(_.nonEmpty))
     } validate (x =>
       if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
         success
@@ -60,7 +60,7 @@ object ArgParser {
     } text "creates a private repository. Default is public"
 
     opt[String]("digital-service-name").optional() action { (x, c) =>
-      c.copy(digitalServiceName = Option(x))
+      c.copy(digitalServiceName = Option(x.trim).filter(_.nonEmpty))
     } text s"Digital service name"
 
     opt[String]("github-username") required () action { (x, c) =>
