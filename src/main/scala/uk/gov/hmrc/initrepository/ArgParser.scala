@@ -44,7 +44,7 @@ object ArgParser {
     help("help") text "prints this usage text"
 
     opt[Seq[String]]("teams") action { (x, c) =>
-      c.copy(teams = x.map(_.trim))
+      c.copy(teams = x.map(_.trim).filter(_.nonEmpty))
     } text "the github team name(s)"
 
     opt[String]("bootstrap-tag").optional() action { (x, c) =>

@@ -75,6 +75,22 @@ class ArgParserSpec extends WordSpec with Matchers {
           githubToken    = "my-pass"
         ))
     }
+
+    "create config with no team names" in {
+
+      val args = Array(
+        """--github-username my-user --github-token my-pass --teams  repoName""".split(" "): _*)
+
+      ArgParser.parser.parse(args, Config()) shouldBe Some(
+        Config(
+          repository     = "repoName",
+          isPrivate      = false,
+          teams          = Seq.empty,
+          bootStrapTag   = None,
+          githubUsername = "my-user",
+          githubToken    = "my-pass"
+        ))
+    }
   }
 
 }
