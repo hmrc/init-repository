@@ -48,18 +48,7 @@ class LocalGitStore(workspace: Path) {
     }
   }
 
-  /**
-    * Does NOT create/write file if the fileContents are None
-    */
-  def commitFileToRoot(
-    repoName: String,
-    fileName: String,
-    fileContent: Option[String],
-    user: String,
-    email: String): Try[Unit] =
-    fileContent.map(commitFileToRoot(repoName, fileName, _, user, email)).getOrElse(Success(()))
-
-  def commitFileToRoot(
+   def commitFileToRoot(
     repoName: String,
     fileName: String,
     fileContent: String,
