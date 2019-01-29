@@ -72,7 +72,28 @@ class LocalGitService(git: LocalGitStore) {
     """.stripMargin
   }
 
+  def buildRepositoryYaml(digitalServiceName: Option[String], privateRepo:Boolean) = {
+
+    val publicVisibilityIdentifier  = "public_0C3F0CE3E6E6448FAD341E7BFA50FCD333E06A20CFF05FCACE61154DDBBADF71"
+    val privateVisibilityIdentifier = "private_12E5349CFB8BBA30AF464C24760B70343C0EAE9E9BD99156345DD0852C2E0F6F"
+    val visibilityIdentifier = if (privateRepo) {
+      privateVisibilityIdentifier
+    } else {
+      publicVisibilityIdentifier
+    }
+
+    val repoVisibilityLine = s"repoVisibility: $visibilityIdentifier"
+
+    val  digitalServiceNameLine = digitalServiceName.map(dsn => s"digital-service: $dsn")
+
+    val lines = List(repoVisibilityLine) ++ digitalServiceNameLine
+    lines.mkString("\n")
+
+  }
+
+
   def initialiseRepository(
+
     newRepoName: String,
     digitalServiceName: Option[String],
     bootstrapTag: Option[String],
@@ -92,7 +113,7 @@ class LocalGitService(git: LocalGitStore) {
       _ <- git.commitFileToRoot(
             newRepoName,
             "repository.yaml",
-            digitalServiceName.map(dsn => s"digital-service: $dsn"),
+            buildRepositoryYaml(digitalServiceName,privateRepo),
             CommitUserName,
             CommitUserEmail)
       _    <- git.push(newRepoName)
