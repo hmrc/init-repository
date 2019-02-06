@@ -33,6 +33,7 @@ class HttpTransport(username: String, password: String) {
 
   def close() = {
     ws.close()
+    system.terminate()
     Log.debug("closing http client")
   }
 
