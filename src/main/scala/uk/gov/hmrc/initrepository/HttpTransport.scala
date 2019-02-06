@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,19 @@
 package uk.gov.hmrc.initrepository
 
 import java.net.URL
-
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import play.api.libs.json.JsValue
-import play.api.libs.ws.ning.{NingAsyncHttpClientConfigBuilder, NingWSClient, NingWSClientConfig}
+import play.api.libs.ws.ahc.{AhcConfigBuilder, AhcWSClient}
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 
 class HttpTransport(username: String, password: String) {
 
-  private val ws = new NingWSClient(new NingAsyncHttpClientConfigBuilder(new NingWSClientConfig()).build())
+  implicit val system: ActorSystem = ActorSystem()
+
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+  private val ws = AhcWSClient(new AhcConfigBuilder().configure().build())
 
   def close() = {
     ws.close()
