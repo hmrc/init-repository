@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ object ArgParser {
 
     arg[String]("repository") action { (x, c) =>
       c.copy(repository = x)
+    } validate { x =>
+      if (x.length > 47) failure("the name of the github repository must be 47 characters or less")
+      else success
     } text "the name of the github repository"
 
     help("help") text "prints this usage text"
@@ -49,11 +52,12 @@ object ArgParser {
 
     opt[String]("bootstrap-tag").optional() action { (x, c) =>
       c.copy(bootStrapTag = Option(x.trim).filter(_.nonEmpty))
-    } validate (x =>
+    } validate { x =>
       if (x.trim.isEmpty || x.matches("^\\d+.\\d+.\\d+$"))
         success
       else
-        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")) text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
+        failure("Version number should be of correct format (i.e 1.0.0 , 0.10.1 etc).")
+    } text "The bootstrap tag to kickstart release candidates. This should be 0.1.0 for *new* repositories or the most recent internal tag version for *migrated* repositories"
 
     opt[Unit]("private") action { (x, c) =>
       c.copy(isPrivate = true)

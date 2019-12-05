@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,15 @@ class ArgParserSpec extends WordSpec with Matchers {
           githubUsername = "my-user",
           githubToken    = "my-pass"
         ))
+    }
+
+    "error when repository name is more than 47 characters" in {
+      val mandatoryArgs = Array("""--github-username my-user --github-token my-pass""".split(" "): _*)
+      def repositoryName(length: Int) = List.fill(length)("x").mkString
+      def parseRepositoryName(length: Int) = ArgParser.parser.parse(mandatoryArgs :+ repositoryName(length), Config())
+
+      parseRepositoryName(length = 47) should be (defined)
+      parseRepositoryName(length = 48) should not be defined
     }
   }
 
