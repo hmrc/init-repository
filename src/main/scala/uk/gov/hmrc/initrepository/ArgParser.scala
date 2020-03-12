@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,8 @@ object ArgParser {
     verbose: Boolean                   = false,
     digitalServiceName: Option[String] = None,
     githubUsername: String             = "",
-    githubToken: String                = ""
+    githubToken: String                = "",
+    requireSignedCommits: Seq[String]  = Nil
   )
 
   val currentVersion = Option(getClass.getPackage.getImplementationVersion).getOrElse("(version not found)")
@@ -74,6 +75,10 @@ object ArgParser {
     opt[String]("github-token") required () action { (x, c) =>
       c.copy(githubToken = x)
     } text "github token"
+
+    opt[Seq[String]]("require-signed-commits") action { (x, c) =>
+      c.copy(requireSignedCommits = x.map(_.trim).filter(_.nonEmpty))
+    } text "branches requiring signed commits"
 
     opt[Unit]("verbose") action { (x, c) =>
       c.copy(verbose = true)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ class ArgParserSpec extends WordSpec with Matchers {
     "create correct config" in {
 
       val args = Array(
-        """--verbose --private --github-username my-user --github-token my-pass --digital-service-name DSN --teams teamName --bootstrap-tag 1.0.0 repoName"""
+        """--verbose --private --github-username my-user --github-token my-pass --digital-service-name DSN --teams teamName --bootstrap-tag 1.0.0 repoName --require-signed-commits master"""
           .split(" "): _*)
 
       ArgParser.parser.parse(args, Config()) shouldBe Some(
@@ -37,7 +37,8 @@ class ArgParserSpec extends WordSpec with Matchers {
           bootStrapTag       = Some("1.0.0"),
           verbose            = true,
           githubUsername     = "my-user",
-          githubToken        = "my-pass"
+          githubToken        = "my-pass",
+          requireSignedCommits = Seq("master")
         ))
     }
 
@@ -56,7 +57,8 @@ class ArgParserSpec extends WordSpec with Matchers {
           bootStrapTag       = None,
           verbose            = true,
           githubUsername     = "my-user",
-          githubToken        = "my-pass"
+          githubToken        = "my-pass",
+          requireSignedCommits = Seq.empty
         ))
     }
 
@@ -72,7 +74,8 @@ class ArgParserSpec extends WordSpec with Matchers {
           teams          = Seq("teamName1", "teamName2"),
           bootStrapTag   = None,
           githubUsername = "my-user",
-          githubToken    = "my-pass"
+          githubToken    = "my-pass",
+          requireSignedCommits = Seq.empty
         ))
     }
 
@@ -88,7 +91,8 @@ class ArgParserSpec extends WordSpec with Matchers {
           teams          = Seq.empty,
           bootStrapTag   = None,
           githubUsername = "my-user",
-          githubToken    = "my-pass"
+          githubToken    = "my-pass",
+          requireSignedCommits = Seq.empty
         ))
     }
 

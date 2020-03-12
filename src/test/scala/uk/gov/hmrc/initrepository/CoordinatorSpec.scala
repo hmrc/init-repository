@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import uk.gov.hmrc.initrepository.git.LocalGitService
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import scala.util.Success
 
 class CoordinatorSpec
@@ -56,13 +57,14 @@ class CoordinatorSpec
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
       when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
+      when(github.addRequireSignedCommits(repoName, Seq("master"))) thenReturn Future.successful("Added master")
 
       // setup git calls
       when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
         ())
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token")
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq("master"))
         .futureValue
 
       // verify pre-conditions
@@ -97,6 +99,7 @@ class CoordinatorSpec
       when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 2, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
+      when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
 
       // setup git calls
       when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
@@ -106,7 +109,7 @@ class CoordinatorSpec
       val accessToken = "access_token"
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false, "github-token")
+        .run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq.empty)
         .futureValue
 
       // verify pre-conditions
@@ -136,6 +139,7 @@ class CoordinatorSpec
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
       when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
       when(github.containsRepo(repoName)) thenReturn Future.successful(false)
+      when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
@@ -147,7 +151,7 @@ class CoordinatorSpec
         ())
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token")
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq.empty)
         .futureValue
 
       // verify pre-conditions
@@ -176,13 +180,15 @@ class CoordinatorSpec
       when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
       when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
       when(github.containsRepo(repoName)) thenReturn Future.successful(false)
+      when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = true)) thenReturn Future.successful(repoUrl)
       when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
-
+      when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
       // setup git calls
+
       when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo, "github-token")) thenReturn Success(
         ())
 
@@ -193,7 +199,8 @@ class CoordinatorSpec
           digitalServiceName = digitalServiceName,
           bootstrapTag       = bootstrapTag,
           privateRepo        = privateRepo,
-          githubToken        = "github-token"
+          githubToken        = "github-token",
+          requireSignedCommits = Seq.empty
         )
         .futureValue
 
@@ -207,6 +214,44 @@ class CoordinatorSpec
 
     }
 
+  }
+
+  "return an error if turning on require signed commits fails" in {
+
+    val github = mock[Github]
+    val git    = mock[LocalGitService]
+
+    val repoName         = "newrepo"
+    val repoId           = 2364862
+    val teamName: String = "teamname"
+    val repoUrl          = "repo-url"
+    val bootstrapTag     = Some("1.0.0")
+
+    // setup pre-conditions
+    when(github.teamId(teamName)) thenReturn Future.successful(Some(1))
+    when(github.teamId("Repository Admins")) thenReturn Future.successful(Some(10))
+    when(github.containsRepo(repoName)) thenReturn Future.successful(false)
+
+    // setup repo creation calls
+    when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
+    when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
+    when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
+    when(github.addRequireSignedCommits(repoName, Seq("master", "SOME-123"))) thenReturn
+      Future.failed(new Exception("Failed to turn on branch protection"))
+
+
+    // setup git calls
+    when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
+      ())
+
+    val futureResponse = new Coordinator(github, git)
+      .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq("master", "SOME-123"))
+
+    val error = intercept[Exception] {
+      Await.result(futureResponse, 5.seconds)
+    }
+
+    error.getMessage shouldBe "Failed to turn on branch protection"
   }
 
   "checkTeamsExistOnGithub" should {

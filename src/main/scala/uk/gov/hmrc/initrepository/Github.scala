@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ class GithubUrls(orgName: String = "hmrc", apiRoot: String = "https://api.github
 
   def addTeamToRepo(repoName: String, teamId: Int) =
     new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName?permission=push")
+
+  def addRequireSignedCommits(repo: String, branch: String): URL =
+    new URL(s"$apiRoot/repos/$orgName/$repo/branches/$branch/protection/required_signatures")
 }
 
 trait Github {
@@ -48,6 +51,7 @@ trait Github {
   def githubUrls: GithubUrls
 
   val IronManApplication = "application/vnd.github.ironman-preview+json"
+  val ZzzaxApplication = "application/vnd.github.zzzax-preview+json"
 
   def teamId(teamName: String): Future[Option[Int]] =
     allTeams().map { teams =>
@@ -136,6 +140,34 @@ trait Github {
             Future.failed(new scala.Exception(
               s"Didn't get expected status code when writing to $url. Got status ${result.status}: POST $url ${result.body}"))
         }
+    }
+  }
+
+  def addRequireSignedCommits(repoName: String, branches: Seq[String]): Future[String] = {
+    branches match {
+      case Nil => Future.successful(s"Repo $repoName does not require signed commits")
+      case _   => Future.sequence(branches.map(addRequireSignedCommitsToBranch(repoName, _)))
+        .map(_.mkString(", "))
+    }
+  }
+
+  private def addRequireSignedCommitsToBranch(repoName: String, branch: String): Future[String] = {
+    Log.info(s"Adding require signed commits to repo $repoName for branch $branch")
+    val url = githubUrls.addRequireSignedCommits(repoName, branch)
+
+    val request: WSRequest = httpTransport
+      .buildJsonCallWithAuth("POST", url, None)
+      .withHeaders(("Accept", ZzzaxApplication))
+
+    Log.debug(request.toString)
+
+    request.execute().flatMap { result =>
+      result.status match {
+        case 200 =>
+          Future.successful(s"Enabled require signed commits for repo $repoName on branch $branch")
+        case _ =>
+          Future.failed(new Exception(s"Didn't get expected status code when writing to $url. Got status ${result.status}: POST $url ${result.body}"))
+      }
     }
   }
 

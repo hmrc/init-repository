@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,13 @@ class GithubUrlsSpecs extends WordSpec with Matchers {
     "generate correct create repo url " in {
       new GithubUrls().createRepo.toString shouldBe
         "https://api.github.com/orgs/hmrc/repos"
+    }
+  }
+
+  "GithubUrls add branch protection to require signed commits" should {
+    "generate the correct repo URL" in {
+      new GithubUrls().addRequireSignedCommits("some-repo", "master").toString shouldBe
+        "https://api.github.com/repos/hmrc/some-repo/branches/master/protection/required_signatures"
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,8 @@ class Coordinator(github: Github, git: LocalGitService) {
     digitalServiceName: Option[String],
     bootstrapTag: Option[String],
     privateRepo: Boolean,
-    githubToken: String): Future[Unit] =
+    githubToken: String,
+    requireSignedCommits: Seq[String]): Future[Unit] =
     checkPreConditions(newRepoName, teams, privateRepo)
       .flatMap { error =>
         if (error.isEmpty) {
@@ -42,8 +43,9 @@ class Coordinator(github: Github, git: LocalGitService) {
             repoUrl <- github.createRepo(newRepoName, privateRepo)
             _       <- addTeamsToGitRepo(teams, newRepoName)
             _       <- addRepoAdminsTeamToGitRepo(newRepoName)
-            _ <- tryToFuture(
-                  git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken))
+            _       <- tryToFuture(
+                          git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken))
+            _       <- github.addRequireSignedCommits(newRepoName, requireSignedCommits)
           } yield repoUrl
         } else {
           Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
@@ -82,7 +84,7 @@ class Coordinator(github: Github, git: LocalGitService) {
   private def addRepoToTeam(repoName: String, teamIdO: Option[Int], permission: String): Future[Unit] =
     teamIdO
       .map { teamId =>
-        github.addRepoToTeam(repoName, teamIdO.get, permission)
+        github.addRepoToTeam(repoName, teamId, permission)
       }
       .getOrElse(Future.failed(new Exception("Didn't have a valid team id")))
 

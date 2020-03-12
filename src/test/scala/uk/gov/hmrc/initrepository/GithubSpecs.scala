@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -267,7 +267,74 @@ class GithubSpecs
     }
   }
 
-  case class Team(id: Int, url: String, name: String)
+  "Github addRequireSignedCommits" should {
+    "enforce signed commits required on the relevant branch" in {
+      givenGitHubExpects(
+        method          = POST,
+        url             = urls.addRequireSignedCommits(repoName, "master"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.zzzax-preview+json"),
+        willRespondWith = (200, None)
+      )
+
+      val futureResponse = github.addRequireSignedCommits(repoName, Seq("master"))
+      val response = Await.result(futureResponse, 5.seconds)
+      response shouldBe s"Enabled require signed commits for repo $repoName on branch master"
+    }
+
+    "return a helpful error if the call fails" in {
+      givenGitHubExpects(
+        method          = POST,
+        url             = urls.addRequireSignedCommits(repoName, "master"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.zzzax-preview+json"),
+        willRespondWith = (500, Some("This didn't work"))
+      )
+
+      val futureResponse = github.addRequireSignedCommits(repoName, Seq("master"))
+      val error = intercept[Exception] {
+        Await.result(futureResponse, 5.seconds)
+      }
+
+      error.getMessage should include("Didn't get expected status code when writing to")
+      error.getMessage should include("/repos/hmrc/domain/branches/master/protection/required_signatures")
+      error.getMessage should include("This didn't work")
+    }
+
+    "return a helpful error if some calls fail and some succeed" in {
+      givenGitHubExpects(
+        method          = POST,
+        url             = urls.addRequireSignedCommits(repoName, "SOME-123"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.zzzax-preview+json"),
+        willRespondWith = (200, None)
+      )
+
+      givenGitHubExpects(
+        method          = POST,
+        url             = urls.addRequireSignedCommits(repoName, "master"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.zzzax-preview+json"),
+        willRespondWith = (500, Some("This didn't work"))
+      )
+
+      val futureResponse = github.addRequireSignedCommits(repoName, Seq("SOME-123", "master"))
+      val error = intercept[Exception] {
+        Await.result(futureResponse, 5.seconds)
+      }
+
+      println(error.getMessage)
+      error.getMessage should fullyMatch
+        "Didn't get expected status code when writing to [*]/repos/hmrc/domain/branches/master/protection/required_signatures. " +
+          "Got status 500: POST [*]/repos/hmrc/domain/branches/master/protection/required_signatures This didn't work".r
+    }
+  }
+
+    case class Team(id: Int, url: String, name: String)
   implicit val f = Json.format[Team]
 
   case class GithubRequest(method: RequestMethod, url: String, body: Option[String]) {
