@@ -40,8 +40,15 @@ class GithubUrls(orgName: String = "hmrc", apiRoot: String = "https://api.github
   def addTeamToRepo(repoName: String, teamId: Int) =
     new URL(s"$apiRoot/teams/$teamId/repos/$orgName/$repoName?permission=push")
 
+  def addBranchProtection(repo: String, branch: String): URL =
+    new URL(branchProtectionRoot(repo, branch))
+
   def addRequireSignedCommits(repo: String, branch: String): URL =
-    new URL(s"$apiRoot/repos/$orgName/$repo/branches/$branch/protection/required_signatures")
+    new URL(s"${branchProtectionRoot(repo, branch)}/required_signatures")
+
+  private def branchProtectionRoot(repo: String, branch: String): String = {
+    s"$apiRoot/repos/$orgName/$repo/branches/$branch/protection"
+  }
 }
 
 trait Github {
@@ -52,6 +59,7 @@ trait Github {
 
   val IronManApplication = "application/vnd.github.ironman-preview+json"
   val ZzzaxApplication = "application/vnd.github.zzzax-preview+json"
+  val LukeCageApplication = "application/vnd.github.luke-cage-preview+json"
 
   def teamId(teamName: String): Future[Option[Int]] =
     allTeams().map { teams =>
@@ -146,8 +154,49 @@ trait Github {
   def addRequireSignedCommits(repoName: String, branches: Seq[String]): Future[String] = {
     branches match {
       case Nil => Future.successful(s"Repo $repoName does not require signed commits")
-      case _   => Future.sequence(branches.map(addRequireSignedCommitsToBranch(repoName, _)))
-        .map(_.mkString(", "))
+      case _   => Future.sequence(branches.map { branch =>
+        for {
+          _      <- addBranchProtection(repoName, branch)
+          result <- addRequireSignedCommitsToBranch(repoName, branch)
+        } yield {
+          result
+        }
+      }).map(_.mkString(", "))
+    }
+  }
+
+  private def addBranchProtection(repoName: String, branch: String) = {
+    Log.info(s"Adding branch protection to repo $repoName for branch $branch")
+    val url = githubUrls.addBranchProtection(repoName, branch)
+
+    val payload = s"""{
+                     |    "required_status_checks": null,
+                     |    "enforce_admins": false,
+                     |    "required_pull_request_reviews": {
+                     |      "dismissal_restrictions": {},
+                     |      "dismiss_stale_reviews": true,
+                     |      "require_code_owner_reviews": false,
+                     |      "required_approving_review_count": 1
+                     |    },
+                     |    "restrictions": null,
+                     |    "required_linear_history": false,
+                     |    "allow_force_pushes": false,
+                     |    "allow_deletions": false
+                     |}""".stripMargin
+
+    val request: WSRequest = httpTransport
+      .buildJsonCallWithAuth("PUT", url, Some(Json.parse(payload)))
+      .withHeaders(("Accept", LukeCageApplication))
+
+    Log.debug(request.toString)
+
+    request.execute().flatMap { result =>
+      result.status match {
+        case 200 =>
+          Future.successful(s"Enabled branch protection for repo $repoName on branch $branch")
+        case _ =>
+          Future.failed(new Exception(s"Didn't get expected status code when writing to $url. Got status ${result.status}: POST $url ${result.body}"))
+      }
     }
   }
 

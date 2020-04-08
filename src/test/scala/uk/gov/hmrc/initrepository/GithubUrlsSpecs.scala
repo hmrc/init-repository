@@ -32,6 +32,13 @@ class GithubUrlsSpecs extends WordSpec with Matchers {
     }
   }
 
+  "GithubUrls enable branch protection" should {
+    "generate the correct repo URL" in {
+      new GithubUrls().addBranchProtection("some-repo", "master").toString shouldBe
+        "https://api.github.com/repos/hmrc/some-repo/branches/master/protection"
+    }
+  }
+
   "GithubUrls add branch protection to require signed commits" should {
     "generate the correct repo URL" in {
       new GithubUrls().addRequireSignedCommits("some-repo", "master").toString shouldBe
