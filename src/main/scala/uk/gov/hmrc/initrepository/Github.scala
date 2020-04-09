@@ -175,7 +175,7 @@ trait Github {
                      |    "required_pull_request_reviews": null,
                      |    "restrictions": null,
                      |    "required_linear_history": false,
-                     |    "allow_force_pushes": false,
+                     |    "allow_force_pushes": true,
                      |    "allow_deletions": false
                      |}""".stripMargin
 
