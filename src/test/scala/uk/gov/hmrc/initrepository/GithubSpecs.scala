@@ -270,6 +270,15 @@ class GithubSpecs
   "Github addRequireSignedCommits" should {
     "enforce signed commits required on the relevant branch" in {
       givenGitHubExpects(
+        method          = PUT,
+        url             = urls.addBranchProtection(repoName, "master"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.luke-cage-preview+json"),
+        willRespondWith = (200, None)
+      )
+
+      givenGitHubExpects(
         method          = POST,
         url             = urls.addRequireSignedCommits(repoName, "master"),
         extraHeaders    = Map(
@@ -283,7 +292,16 @@ class GithubSpecs
       response shouldBe s"Enabled require signed commits for repo $repoName on branch master"
     }
 
-    "return a helpful error if the call fails" in {
+    "return a helpful error if the require signed commits call fails" in {
+      givenGitHubExpects(
+        method          = PUT,
+        url             = urls.addBranchProtection(repoName, "master"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.luke-cage-preview+json"),
+        willRespondWith = (200, None)
+      )
+
       givenGitHubExpects(
         method          = POST,
         url             = urls.addRequireSignedCommits(repoName, "master"),
@@ -301,6 +319,35 @@ class GithubSpecs
       error.getMessage should include("Didn't get expected status code when writing to")
       error.getMessage should include("/repos/hmrc/domain/branches/master/protection/required_signatures")
       error.getMessage should include("This didn't work")
+    }
+
+    "return a helpful error if the enabling branch protection fails" in {
+      givenGitHubExpects(
+        method          = PUT,
+        url             = urls.addBranchProtection(repoName, "master"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.luke-cage-preview+json"),
+        willRespondWith = (400, Some("Branch protection didn't work"))
+      )
+
+      givenGitHubExpects(
+        method          = POST,
+        url             = urls.addRequireSignedCommits(repoName, "master"),
+        extraHeaders    = Map(
+          "Authorization" -> basicAuthHeader,
+          "Accept" -> "application/vnd.github.zzzax-preview+json"),
+        willRespondWith = (500, Some("Signed commits didn't work"))
+      )
+
+      val futureResponse = github.addRequireSignedCommits(repoName, Seq("master"))
+      val error = intercept[Exception] {
+        Await.result(futureResponse, 5.seconds)
+      }
+
+      error.getMessage should include("Didn't get expected status code when writing to")
+      error.getMessage should include("/repos/hmrc/domain/branches/master/protection")
+      error.getMessage should include("Branch protection didn't work")
     }
 
     "return a helpful error if some calls fail and some succeed" in {
