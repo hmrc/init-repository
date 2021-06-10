@@ -107,6 +107,25 @@ trait Github {
     }
   }
 
+  def updateDefaultBranch(repoName: String, defaultBranchName: String): Future[Unit] = {
+    Log.info(s"Updating default branch name for $repoName to $defaultBranchName")
+
+    val req = httpTransport
+      .buildJsonCallWithAuth("PATCH", githubUrls.containsRepo(repoName))
+      .withHeaders("Accept" -> IronManApplication)
+      .withHeaders("Content-Length" -> "0")
+      .withBody(s"""{"default_branch": "$defaultBranchName"}"""")
+
+    Log.debug(req.toString)
+
+    req.execute().flatMap { res =>
+      res.status match {
+        case 200 => Future.successful(Unit)
+        case _   => Future.failed(new RequestException(req, res))
+      }
+    }
+  }
+
   def containsRepo(repoName: String): Future[Boolean] = {
     val req = httpTransport.buildJsonCallWithAuth("GET", githubUrls.containsRepo(repoName))
 

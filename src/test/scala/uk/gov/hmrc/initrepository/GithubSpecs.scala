@@ -267,6 +267,29 @@ class GithubSpecs
     }
   }
 
+  "Github.updateDefaultBranch" should {
+    "successfully update default branch" in {
+      givenGitHubExpects(
+        method          = PATCH,
+        url             = urls.containsRepo(repoName),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
+        willRespondWith = (200, None)
+      )
+
+      printMappings()
+      val future = github.updateDefaultBranch(repoName, "main")
+      Await.result(future, 5.seconds)
+      future.value.get.isSuccess shouldBe true
+
+      assertRequest(
+        method       = PATCH,
+        url          = urls.containsRepo(repoName),
+        extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
+        body         = Some("""{"default_branch": "main"}""")
+      )
+    }
+  }
+
   "Github addRequireSignedCommits" should {
     "enforce signed commits required on the relevant branch" in {
       givenGitHubExpects(
