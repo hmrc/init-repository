@@ -34,6 +34,7 @@ class Coordinator(github: Github, git: LocalGitService) {
     bootstrapTag: Option[String],
     privateRepo: Boolean,
     githubToken: String,
+    defaultBranchName: String,
     requireSignedCommits: Seq[String]): Future[Unit] =
     checkPreConditions(newRepoName, teams, privateRepo)
       .flatMap { error =>
@@ -41,6 +42,7 @@ class Coordinator(github: Github, git: LocalGitService) {
           Log.info(s"Pre-conditions met, creating '$newRepoName'")
           for {
             repoUrl <- github.createRepo(newRepoName, privateRepo)
+            -       <- github.updateDefaultBranch(newRepoName, defaultBranchName)
             _       <- addTeamsToGitRepo(teams, newRepoName)
             _       <- addRepoAdminsTeamToGitRepo(newRepoName)
             _       <- tryToFuture(

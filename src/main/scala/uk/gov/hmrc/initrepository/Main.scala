@@ -55,6 +55,7 @@ object Main {
               config.bootStrapTag,
               config.isPrivate,
               config.githubToken,
+              config.defaultBranchName,
               config.requireSignedCommits
             )
 
