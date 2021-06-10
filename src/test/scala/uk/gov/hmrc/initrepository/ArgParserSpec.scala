@@ -25,7 +25,7 @@ class ArgParserSpec extends WordSpec with Matchers {
     "create correct config" in {
 
       val args = Array(
-        """--verbose --private --github-username my-user --github-token my-pass --digital-service-name DSN --teams teamName --bootstrap-tag 1.0.0 repoName --require-signed-commits master"""
+        """--verbose --private --github-username my-user --github-token my-pass --digital-service-name DSN --teams teamName --bootstrap-tag 1.0.0 repoName --require-signed-commits master --default-branch-name foo"""
           .split(" "): _*)
 
       ArgParser.parser.parse(args, Config()) shouldBe Some(
@@ -38,14 +38,15 @@ class ArgParserSpec extends WordSpec with Matchers {
           verbose            = true,
           githubUsername     = "my-user",
           githubToken        = "my-pass",
-          requireSignedCommits = Seq("master")
+          requireSignedCommits = Seq("master"),
+          defaultBranchName = "foo"
         ))
     }
 
     "ignore optional params when empty values are provided" in {
 
       val args = Array(
-        """--verbose --private --github-username my-user --github-token my-pass --digital-service-name  --teams my-team --bootstrap-tag  repoName"""
+        """--verbose --private --github-username my-user --github-token my-pass --default-branch-name foo --digital-service-name  --teams my-team --bootstrap-tag  repoName"""
           .split(" "): _*)
 
       ArgParser.parser.parse(args, Config()) shouldBe Some(
@@ -58,14 +59,15 @@ class ArgParserSpec extends WordSpec with Matchers {
           verbose            = true,
           githubUsername     = "my-user",
           githubToken        = "my-pass",
-          requireSignedCommits = Seq.empty
+          requireSignedCommits = Seq.empty,
+          defaultBranchName  = "foo"
         ))
     }
 
     "create config with multiple team names" in {
 
       val args = Array(
-        """--github-username my-user --github-token my-pass --teams teamName1,teamName2 repoName""".split(" "): _*)
+        """--github-username my-user --github-token my-pass --default-branch-name master --teams teamName1,teamName2 repoName""".split(" "): _*)
 
       ArgParser.parser.parse(args, Config()) shouldBe Some(
         Config(
@@ -75,14 +77,15 @@ class ArgParserSpec extends WordSpec with Matchers {
           bootStrapTag   = None,
           githubUsername = "my-user",
           githubToken    = "my-pass",
-          requireSignedCommits = Seq.empty
+          requireSignedCommits = Seq.empty,
+          defaultBranchName = "master"
         ))
     }
 
     "create config with no team names" in {
 
       val args = Array(
-        """--github-username my-user --github-token my-pass --teams  repoName""".split(" "): _*)
+        """--github-username my-user --github-token my-pass --default-branch-name main --teams  repoName""".split(" "): _*)
 
       ArgParser.parser.parse(args, Config()) shouldBe Some(
         Config(
@@ -92,12 +95,13 @@ class ArgParserSpec extends WordSpec with Matchers {
           bootStrapTag   = None,
           githubUsername = "my-user",
           githubToken    = "my-pass",
-          requireSignedCommits = Seq.empty
+          requireSignedCommits = Seq.empty,
+          defaultBranchName = "main"
         ))
     }
 
     "error when repository name is more than 47 characters" in {
-      val mandatoryArgs = Array("""--github-username my-user --github-token my-pass""".split(" "): _*)
+      val mandatoryArgs = Array("""--github-username my-user --github-token my-pass --default-branch-name foo""".split(" "): _*)
       def repositoryName(length: Int) = List.fill(length)("x").mkString
       def parseRepositoryName(length: Int) = ArgParser.parser.parse(mandatoryArgs :+ repositoryName(length), Config())
 
