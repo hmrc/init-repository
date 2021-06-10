@@ -61,7 +61,7 @@ class CoordinatorSpec
       when(github.addRequireSignedCommits(repoName, Seq("master"))) thenReturn Future.successful("Added master")
 
       // setup git calls
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master")) thenReturn Success(
         ())
 
       new Coordinator(github, git)
@@ -105,7 +105,7 @@ class CoordinatorSpec
       when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
 
       // setup git calls
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main")) thenReturn Success(
         ())
 
       // setup travis calls
@@ -152,7 +152,7 @@ class CoordinatorSpec
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main")) thenReturn Success(
         ())
 
       new Coordinator(github, git)
@@ -196,7 +196,7 @@ class CoordinatorSpec
       when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
       // setup git calls
 
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo, "github-token")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo, "github-token", "foo")) thenReturn Success(
         ())
 
       new Coordinator(github, git)
@@ -251,7 +251,7 @@ class CoordinatorSpec
 
 
     // setup git calls
-    when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
+    when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master")) thenReturn Success(
       ())
 
     val futureResponse = new Coordinator(github, git)

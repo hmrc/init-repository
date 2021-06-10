@@ -42,12 +42,12 @@ class Coordinator(github: Github, git: LocalGitService) {
           Log.info(s"Pre-conditions met, creating '$newRepoName'")
           for {
             repoUrl <- github.createRepo(newRepoName, privateRepo)
-            -       <- github.updateDefaultBranch(newRepoName, defaultBranchName)
             _       <- addTeamsToGitRepo(teams, newRepoName)
             _       <- addRepoAdminsTeamToGitRepo(newRepoName)
             _       <- tryToFuture(
-                          git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken))
+                          git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken, defaultBranchName))
             _       <- github.addRequireSignedCommits(newRepoName, requireSignedCommits)
+            -       <- github.updateDefaultBranch(newRepoName, defaultBranchName)
           } yield repoUrl
         } else {
           Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))

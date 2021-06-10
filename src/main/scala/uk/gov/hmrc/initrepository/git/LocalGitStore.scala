@@ -77,13 +77,13 @@ class LocalGitStore(workspace: Path) {
     }
   }
 
-  def push(repoName: String): Try[Unit] =
-    Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map { _ =>
+  def push(repoName: String, defaultBranchName: String): Try[Unit] =
+    Command.run(s"$gitCommand push origin $defaultBranchName", inDir = Some(workspace.resolve(repoName))).map { _ =>
       Unit
     }
 
-  def pushTags(repoName: String): Try[Unit] =
-    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map { _ =>
+  def pushTags(repoName: String, defaultBranchName: String): Try[Unit] =
+    Command.run(s"$gitCommand push --tags origin $defaultBranchName", inDir = Some(workspace.resolve(repoName))).map { _ =>
       Unit
     }
 

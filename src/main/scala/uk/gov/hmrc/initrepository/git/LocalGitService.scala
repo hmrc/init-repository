@@ -93,12 +93,13 @@ class LocalGitService(git: LocalGitStore) {
 
 
   def initialiseRepository(
-
     newRepoName: String,
     digitalServiceName: Option[String],
     bootstrapTag: Option[String],
     privateRepo: Boolean,
-    githubToken: String): Try[Unit] = {
+    githubToken: String,
+    defaultBranchName: String
+  ): Try[Unit] = {
 
     val url = s"https://$githubToken@github.com/hmrc/$newRepoName"
     for {
@@ -116,11 +117,11 @@ class LocalGitService(git: LocalGitStore) {
             buildRepositoryYaml(digitalServiceName,privateRepo),
             CommitUserName,
             CommitUserEmail)
-      _    <- git.push(newRepoName)
+      _    <- git.push(newRepoName, defaultBranchName)
       shaO <- if (bootstrapTag.isDefined) git.lastCommitSha(newRepoName) else Try(None)
       _ <- if (bootstrapTag.isDefined) maybeCreateTag(newRepoName, shaO, BootstrapTagComment, bootstrapTag.get)
           else Try(Unit)
-      _ <- if (bootstrapTag.isDefined) git.pushTags(newRepoName) else Try(Unit)
+      _ <- if (bootstrapTag.isDefined) git.pushTags(newRepoName, defaultBranchName) else Try(Unit)
     } yield Unit
   }
 
