@@ -130,4 +130,11 @@ class LocalGitStore(workspace: Path) {
     val name = url.split('/').last.stripSuffix(".git")
     name
   }
+
+  def deleteRemoteBranch(repoName: String, branch: String): Try[Unit] = {
+    Log.info(s"Deleting $branch from $repoName remote")
+    Command.run(s"$gitCommand push origin --delete $branch", inDir = Some(workspace.resolve(repoName))).map { _ =>
+      Unit 
+    }
+  }
 }

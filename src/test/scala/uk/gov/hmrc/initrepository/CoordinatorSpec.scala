@@ -63,6 +63,7 @@ class CoordinatorSpec
       // setup git calls
       when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master")) thenReturn Success(
         ())
+      when(git.deleteMasterBranchIfNotDefault(repoName, "master")) thenReturn Success(())
 
       new Coordinator(github, git)
         .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master", Seq("master"))
@@ -107,6 +108,7 @@ class CoordinatorSpec
       // setup git calls
       when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main")) thenReturn Success(
         ())
+      when(git.deleteMasterBranchIfNotDefault(repoName, "main")) thenReturn Success(())
 
       // setup travis calls
       val accessToken = "access_token"
@@ -154,6 +156,7 @@ class CoordinatorSpec
       // setup git calls
       when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main")) thenReturn Success(
         ())
+      when(git.deleteMasterBranchIfNotDefault(repoName, "main")) thenReturn Success(())
 
       new Coordinator(github, git)
         .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main", Seq.empty)
@@ -198,6 +201,7 @@ class CoordinatorSpec
 
       when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo, "github-token", "foo")) thenReturn Success(
         ())
+      when(git.deleteMasterBranchIfNotDefault(repoName, "foo")) thenReturn Success(())
 
       new Coordinator(github, git)
         .run(

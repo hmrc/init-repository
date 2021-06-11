@@ -48,6 +48,7 @@ class Coordinator(github: Github, git: LocalGitService) {
                           git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken, defaultBranchName))
             _       <- github.addRequireSignedCommits(newRepoName, requireSignedCommits)
             -       <- github.updateDefaultBranch(newRepoName, defaultBranchName)
+            -       <- tryToFuture(git.deleteMasterBranchIfNotDefault(newRepoName, defaultBranchName))
           } yield repoUrl
         } else {
           Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))

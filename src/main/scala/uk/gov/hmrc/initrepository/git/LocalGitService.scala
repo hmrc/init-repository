@@ -133,4 +133,12 @@ class LocalGitService(git: LocalGitStore) {
       .getOrElse {
         Failure(new IllegalAccessException("Didn't get a valid sha, check the list of commits"))
       }
+
+  def deleteMasterBranchIfNotDefault(repoName: String, defaultBranchName: String): Try[Unit] = {
+    if (defaultBranchName != "master") {
+      git.deleteRemoteBranch(repoName, "master")
+    } else {
+      Try(Unit)
+    }
+  }
 }
