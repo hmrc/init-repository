@@ -61,7 +61,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
 
-      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
       when(store.lastCommitSha(any[String])).thenReturn(Try(Some("abcd")))
@@ -78,7 +78,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
         defaultBranchName  = "foo"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "foo")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -106,7 +106,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
     "initialise a public repository" in {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
-      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
       when(store.lastCommitSha(any[String])).thenReturn(Try(Some("abcd")))
@@ -123,7 +123,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
         defaultBranchName  = "bar"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "bar")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -151,7 +151,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
     "not require a bootstrap tag" in {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
-      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
       when(store.push(any[String], any[String])).thenReturn(Try((): Unit))
@@ -165,7 +165,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
         defaultBranchName  = "bar"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "bar")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -192,7 +192,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
 
-      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
       when(store.lastCommitSha(any[String])).thenReturn(Try(Some("abcd")))
@@ -209,7 +209,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
         defaultBranchName  = "main"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "main")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",

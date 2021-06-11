@@ -54,14 +54,14 @@ class GitSpecs
 
       val git2 = new LocalGitStore(storePath2)
 
-      git2.cloneRepoURL(s"${tempDir.resolve("test-repo")}")
+      git2.cloneRepoURL(s"${tempDir.resolve("test-repo")}", "main")
 
       storePath2.resolve("test-repo").resolve(".git").toFile.isDirectory shouldBe true
     }
   }
 
   def cloneThisRepo(git: LocalGitStore, targetDir: Path): Unit =
-    git.cloneRepoURL(thisProjectsPath.toString)
+    git.cloneRepoURL(thisProjectsPath.toString, "main")
 
   "Git.lastCommitSha" should {
     "get last commit sha " in {

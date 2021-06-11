@@ -107,7 +107,7 @@ class LocalGitStore(workspace: Path) {
     }
   }
 
-  def cloneRepoURL(url: String): Try[Unit] = {
+  def cloneRepoURL(url: String, defaultBranchName: String): Try[Unit] = {
     val name: String = getRepoNameFromUrl(url)
     val targetDir    = workspace.resolve(name)
 
@@ -118,6 +118,10 @@ class LocalGitStore(workspace: Path) {
     }
 
     git(s"clone $url") map { _ =>
+      Unit
+    }
+
+    Command.run(s"$gitCommand branch -M $defaultBranchName", inDir = Some(targetDir)).map { _ =>
       Unit
     }
   }

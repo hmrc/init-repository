@@ -103,7 +103,7 @@ class LocalGitService(git: LocalGitStore) {
 
     val url = s"https://$githubToken@github.com/hmrc/$newRepoName"
     for {
-      _ <- git.cloneRepoURL(url)
+      _ <- git.cloneRepoURL(url, defaultBranchName)
       _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
       _ <- git.commitFileToRoot(
             newRepoName,
