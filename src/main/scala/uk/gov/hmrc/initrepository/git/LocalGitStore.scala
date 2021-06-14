@@ -121,7 +121,7 @@ class LocalGitStore(workspace: Path) {
       Unit
     }
 
-    Command.run(s"$gitCommand branch -M $defaultBranchName", inDir = Some(targetDir)).map { _ =>
+    Command.run(s"$gitCommand branch -m $defaultBranchName", inDir = Some(targetDir)).map { _ =>
       Unit
     }
   }
