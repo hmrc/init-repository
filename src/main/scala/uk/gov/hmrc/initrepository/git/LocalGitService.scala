@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,16 +93,17 @@ class LocalGitService(git: LocalGitStore) {
 
 
   def initialiseRepository(
-
     newRepoName: String,
     digitalServiceName: Option[String],
     bootstrapTag: Option[String],
     privateRepo: Boolean,
-    githubToken: String): Try[Unit] = {
+    githubToken: String,
+    defaultBranchName: String
+  ): Try[Unit] = {
 
     val url = s"https://$githubToken@github.com/hmrc/$newRepoName"
     for {
-      _ <- git.cloneRepoURL(url)
+      _ <- git.cloneRepoURL(url, defaultBranchName)
       _ <- git.commitFileToRoot(newRepoName, ".gitignore", gitIgnoreContents, CommitUserName, CommitUserEmail)
       _ <- git.commitFileToRoot(
             newRepoName,
@@ -116,11 +117,11 @@ class LocalGitService(git: LocalGitStore) {
             buildRepositoryYaml(digitalServiceName,privateRepo),
             CommitUserName,
             CommitUserEmail)
-      _    <- git.push(newRepoName)
+      _    <- git.push(newRepoName, defaultBranchName)
       shaO <- if (bootstrapTag.isDefined) git.lastCommitSha(newRepoName) else Try(None)
       _ <- if (bootstrapTag.isDefined) maybeCreateTag(newRepoName, shaO, BootstrapTagComment, bootstrapTag.get)
           else Try(Unit)
-      _ <- if (bootstrapTag.isDefined) git.pushTags(newRepoName) else Try(Unit)
+      _ <- if (bootstrapTag.isDefined) git.pushTags(newRepoName, defaultBranchName) else Try(Unit)
     } yield Unit
   }
 
@@ -132,4 +133,12 @@ class LocalGitService(git: LocalGitStore) {
       .getOrElse {
         Failure(new IllegalAccessException("Didn't get a valid sha, check the list of commits"))
       }
+
+  def deleteMasterBranchIfNotDefault(repoName: String, defaultBranchName: String): Try[Unit] = {
+    if (defaultBranchName != "master") {
+      git.deleteRemoteBranch(repoName, "master")
+    } else {
+      Try(Unit)
+    }
+  }
 }

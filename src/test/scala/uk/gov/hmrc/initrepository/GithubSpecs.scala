@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -263,6 +263,29 @@ class GithubSpecs
         url          = urls.addTeamToRepo(repoName, 99),
         extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
         body         = Some("""{"permission": "push"}""")
+      )
+    }
+  }
+
+  "Github.updateDefaultBranch" should {
+    "successfully update default branch" in {
+      givenGitHubExpects(
+        method          = PATCH,
+        url             = urls.containsRepo(repoName),
+        extraHeaders    = Map("Authorization" -> basicAuthHeader),
+        willRespondWith = (200, None)
+      )
+
+      printMappings()
+      val future = github.updateDefaultBranch(repoName, "main")
+      Await.result(future, 5.seconds)
+      future.value.get.isSuccess shouldBe true
+
+      assertRequest(
+        method       = PATCH,
+        url          = urls.containsRepo(repoName),
+        extraHeaders = Map("Accept" -> "application/vnd.github.ironman-preview+json"),
+        body         = Some("""{"default_branch": "main"}""")
       )
     }
   }

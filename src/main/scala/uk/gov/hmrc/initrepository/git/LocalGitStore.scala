@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,13 +77,13 @@ class LocalGitStore(workspace: Path) {
     }
   }
 
-  def push(repoName: String): Try[Unit] =
-    Command.run(s"$gitCommand push origin master", inDir = Some(workspace.resolve(repoName))).map { _ =>
+  def push(repoName: String, defaultBranchName: String): Try[Unit] =
+    Command.run(s"$gitCommand push origin $defaultBranchName", inDir = Some(workspace.resolve(repoName))).map { _ =>
       Unit
     }
 
-  def pushTags(repoName: String): Try[Unit] =
-    Command.run(s"$gitCommand push --tags origin master", inDir = Some(workspace.resolve(repoName))).map { _ =>
+  def pushTags(repoName: String, defaultBranchName: String): Try[Unit] =
+    Command.run(s"$gitCommand push --tags origin $defaultBranchName", inDir = Some(workspace.resolve(repoName))).map { _ =>
       Unit
     }
 
@@ -107,7 +107,7 @@ class LocalGitStore(workspace: Path) {
     }
   }
 
-  def cloneRepoURL(url: String): Try[Unit] = {
+  def cloneRepoURL(url: String, defaultBranchName: String): Try[Unit] = {
     val name: String = getRepoNameFromUrl(url)
     val targetDir    = workspace.resolve(name)
 
@@ -120,10 +120,21 @@ class LocalGitStore(workspace: Path) {
     git(s"clone $url") map { _ =>
       Unit
     }
+
+    Command.run(s"$gitCommand branch -M $defaultBranchName", inDir = Some(targetDir)).map { _ =>
+      Unit
+    }
   }
 
   def getRepoNameFromUrl(url: String): String = {
     val name = url.split('/').last.stripSuffix(".git")
     name
+  }
+
+  def deleteRemoteBranch(repoName: String, branch: String): Try[Unit] = {
+    Log.info(s"Deleting $branch from $repoName remote")
+    Command.run(s"$gitCommand push origin --delete $branch", inDir = Some(workspace.resolve(repoName))).map { _ =>
+      Unit 
+    }
   }
 }

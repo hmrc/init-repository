@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,25 @@ trait Github {
     req.execute().flatMap { res =>
       res.status match {
         case 204 => Future.successful(Unit)
+        case _   => Future.failed(new RequestException(req, res))
+      }
+    }
+  }
+
+  def updateDefaultBranch(repoName: String, defaultBranchName: String): Future[Unit] = {
+    Log.info(s"Updating default branch name for $repoName to $defaultBranchName")
+
+    val req = httpTransport
+      .buildJsonCallWithAuth("PATCH", githubUrls.containsRepo(repoName))
+      .withHeaders("Accept" -> IronManApplication)
+      .withHeaders("Content-Length" -> "0")
+      .withBody(s"""{"default_branch": "$defaultBranchName"}"""")
+
+    Log.debug(req.toString)
+
+    req.execute().flatMap { res =>
+      res.status match {
+        case 200 => Future.successful(Unit)
         case _   => Future.failed(new RequestException(req, res))
       }
     }
