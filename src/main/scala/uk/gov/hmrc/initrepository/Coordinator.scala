@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ class Coordinator(github: Github, git: LocalGitService) {
     bootstrapTag: Option[String],
     privateRepo: Boolean,
     githubToken: String,
-    defaultBranchName: String,
     requireSignedCommits: Seq[String]): Future[Unit] =
     checkPreConditions(newRepoName, teams, privateRepo)
       .flatMap { error =>
@@ -45,10 +44,8 @@ class Coordinator(github: Github, git: LocalGitService) {
             _       <- addTeamsToGitRepo(teams, newRepoName)
             _       <- addRepoAdminsTeamToGitRepo(newRepoName)
             _       <- tryToFuture(
-                          git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken, defaultBranchName))
+                          git.initialiseRepository(newRepoName, digitalServiceName, bootstrapTag, privateRepo, githubToken))
             _       <- github.addRequireSignedCommits(newRepoName, requireSignedCommits)
-            -       <- github.updateDefaultBranch(newRepoName, defaultBranchName)
-            -       <- tryToFuture(git.deleteMasterBranchIfNotDefault(newRepoName, defaultBranchName))
           } yield repoUrl
         } else {
           Future.failed(new Exception(s"pre-condition check failed with: ${error.get}"))
