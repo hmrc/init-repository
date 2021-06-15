@@ -78,7 +78,7 @@ class LocalGitStore(workspace: Path) {
   }
 
   def push(repoName: String, defaultBranchName: String): Try[Unit] =
-    Command.run(s"$gitCommand push origin $defaultBranchName", inDir = Some(workspace.resolve(repoName))).map { _ =>
+    Command.run(s"$gitCommand push origin master:$defaultBranchName", inDir = Some(workspace.resolve(repoName))).map { _ =>
       Unit
     }
 
@@ -118,10 +118,6 @@ class LocalGitStore(workspace: Path) {
     }
 
     git(s"clone $url") map { _ =>
-      Unit
-    }
-
-    Command.run(s"$gitCommand branch -m $defaultBranchName", inDir = Some(targetDir)).map { _ =>
       Unit
     }
   }
