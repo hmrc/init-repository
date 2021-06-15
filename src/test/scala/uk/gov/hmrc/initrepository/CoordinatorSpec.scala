@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,18 +55,16 @@ class CoordinatorSpec
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
-      when(github.updateDefaultBranch(repoName, "master")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
       when(github.addRequireSignedCommits(repoName, Seq("master"))) thenReturn Future.successful("Added master")
 
       // setup git calls
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
         ())
-      when(git.deleteMasterBranchIfNotDefault(repoName, "master")) thenReturn Success(())
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master", Seq("master"))
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq("master"))
         .futureValue
 
       // verify pre-conditions
@@ -75,7 +73,6 @@ class CoordinatorSpec
 
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = false)
-      verify(github).updateDefaultBranch(repoName, "master")
       verify(github).addRepoToTeam(repoName, 1, "push")
 
     }
@@ -99,22 +96,20 @@ class CoordinatorSpec
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
-      when(github.updateDefaultBranch(repoName, "main")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 2, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
       when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
 
       // setup git calls
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
         ())
-      when(git.deleteMasterBranchIfNotDefault(repoName, "main")) thenReturn Success(())
 
       // setup travis calls
       val accessToken = "access_token"
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main", Seq.empty)
+        .run(repoName, Seq(teamName1, teamName2), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq.empty)
         .futureValue
 
       // verify pre-conditions
@@ -124,7 +119,6 @@ class CoordinatorSpec
 
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = false)
-      verify(github).updateDefaultBranch(repoName, "main")
       verify(github).addRepoToTeam(repoName, 1, "push")
       verify(github).addRepoToTeam(repoName, 2, "push")
       verify(github).addRepoToTeam(repoName, 10, "admin")
@@ -149,17 +143,15 @@ class CoordinatorSpec
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
-      when(github.updateDefaultBranch(repoName, "main")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
 
       // setup git calls
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
         ())
-      when(git.deleteMasterBranchIfNotDefault(repoName, "main")) thenReturn Success(())
 
       new Coordinator(github, git)
-        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "main", Seq.empty)
+        .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq.empty)
         .futureValue
 
       // verify pre-conditions
@@ -168,7 +160,6 @@ class CoordinatorSpec
 
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = false)
-      verify(github).updateDefaultBranch(repoName, "main")
       verify(github).addRepoToTeam(repoName, 1, "push")
 
     }
@@ -193,15 +184,13 @@ class CoordinatorSpec
 
       // setup repo creation calls
       when(github.createRepo(repoName, privateRepo = true)) thenReturn Future.successful(repoUrl)
-      when(github.updateDefaultBranch(repoName, "foo")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
       when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
       when(github.addRequireSignedCommits(repoName, Seq.empty)) thenReturn Future.successful("")
       // setup git calls
 
-      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo, "github-token", "foo")) thenReturn Success(
+      when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo, "github-token")) thenReturn Success(
         ())
-      when(git.deleteMasterBranchIfNotDefault(repoName, "foo")) thenReturn Success(())
 
       new Coordinator(github, git)
         .run(
@@ -211,7 +200,6 @@ class CoordinatorSpec
           bootstrapTag       = bootstrapTag,
           privateRepo        = privateRepo,
           githubToken        = "github-token",
-          defaultBranchName  = "foo",
           requireSignedCommits = Seq.empty
         )
         .futureValue
@@ -222,7 +210,6 @@ class CoordinatorSpec
 
       // verify repo creation calls
       verify(github).createRepo(repoName, privateRepo = true)
-      verify(github).updateDefaultBranch(repoName, "foo")
       verify(github).addRepoToTeam(repoName, 1, "push")
 
     }
@@ -247,7 +234,6 @@ class CoordinatorSpec
 
     // setup repo creation calls
     when(github.createRepo(repoName, privateRepo = false)) thenReturn Future.successful(repoUrl)
-    when(github.updateDefaultBranch(repoName, "master")) thenReturn Future.successful(())
     when(github.addRepoToTeam(repoName, 1, "push")) thenReturn Future.successful(())
     when(github.addRepoToTeam(repoName, 10, "admin")) thenReturn Future.successful(())
     when(github.addRequireSignedCommits(repoName, Seq("master", "SOME-123"))) thenReturn
@@ -255,11 +241,11 @@ class CoordinatorSpec
 
 
     // setup git calls
-    when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master")) thenReturn Success(
+    when(git.initialiseRepository(repoName, digitalServiceName, bootstrapTag, privateRepo = false, "github-token")) thenReturn Success(
       ())
 
     val futureResponse = new Coordinator(github, git)
-      .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", "master", Seq("master", "SOME-123"))
+      .run(repoName, Seq(teamName), digitalServiceName, bootstrapTag, privateRepo = false, "github-token", Seq("master", "SOME-123"))
 
     val error = intercept[Exception] {
       Await.result(futureResponse, 5.seconds)

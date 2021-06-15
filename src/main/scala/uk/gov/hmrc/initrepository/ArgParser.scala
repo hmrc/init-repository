@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ object ArgParser {
     digitalServiceName: Option[String] = None,
     githubUsername: String             = "",
     githubToken: String                = "",
-    defaultBranchName: String          = "",
     requireSignedCommits: Seq[String]  = Nil
   )
 
@@ -76,10 +75,6 @@ object ArgParser {
     opt[String]("github-token") required () action { (x, c) =>
       c.copy(githubToken = x)
     } text "github token"
-
-    opt[String]("default-branch-name") required () action { (x, c) =>
-      c.copy(defaultBranchName = x)
-    } text "name for default branch"
 
     opt[Seq[String]]("require-signed-commits") action { (x, c) =>
       c.copy(requireSignedCommits = x.map(_.trim).filter(_.nonEmpty))

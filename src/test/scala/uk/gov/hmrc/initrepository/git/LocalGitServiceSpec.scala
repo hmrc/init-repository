@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,24 +61,23 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
 
-      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
       when(store.lastCommitSha(any[String])).thenReturn(Try(Some("abcd")))
       when(store.tagAnnotatedCommit(any[String], any[String], any[String], any[String])).thenReturn(Try((): Unit))
-      when(store.push(any[String], any[String])).thenReturn(Try((): Unit))
-      when(store.pushTags(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.push(any[String])).thenReturn(Try((): Unit))
+      when(store.pushTags(any[String])).thenReturn(Try((): Unit))
 
       service.initialiseRepository(
         newRepoName        = "a-service",
         digitalServiceName = None,
         bootstrapTag       = Some("0.1.0"),
         privateRepo        = true,
-        githubToken        = "token",
-        defaultBranchName  = "foo"
+        githubToken        = "token"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "foo")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -97,33 +96,32 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
         "repoVisibility: private_12E5349CFB8BBA30AF464C24760B70343C0EAE9E9BD99156345DD0852C2E0F6F",
         "hmrc-web-operations",
         "hmrc-web-operations@digital.hmrc.gov.uk")
-      verify(store).push("a-service", "foo")
+      verify(store).push("a-service")
       verify(store).tagAnnotatedCommit("a-service", "abcd", "Bootstrap tag", "0.1.0")
-      verify(store).push("a-service", "foo")
-      verify(store).pushTags("a-service", "foo")
+      verify(store).push("a-service")
+      verify(store).pushTags("a-service")
     }
 
     "initialise a public repository" in {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
-      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
       when(store.lastCommitSha(any[String])).thenReturn(Try(Some("abcd")))
       when(store.tagAnnotatedCommit(any[String], any[String], any[String], any[String])).thenReturn(Try((): Unit))
-      when(store.push(any[String], any[String])).thenReturn(Try((): Unit))
-      when(store.pushTags(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.push(any[String])).thenReturn(Try((): Unit))
+      when(store.pushTags(any[String])).thenReturn(Try((): Unit))
 
       service.initialiseRepository(
         newRepoName        = "a-service",
         digitalServiceName = None,
         bootstrapTag       = Some("0.1.0"),
         privateRepo        = false,
-        githubToken        = "token",
-        defaultBranchName  = "bar"
+        githubToken        = "token"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "bar")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -144,28 +142,27 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
         "hmrc-web-operations@digital.hmrc.gov.uk")
       verify(store).lastCommitSha("a-service")
       verify(store).tagAnnotatedCommit("a-service", "abcd", "Bootstrap tag", "0.1.0")
-      verify(store).push("a-service", "bar")
-      verify(store).pushTags("a-service", "bar")
+      verify(store).push("a-service")
+      verify(store).pushTags("a-service")
     }
 
     "not require a bootstrap tag" in {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
-      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
-      when(store.push(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.push(any[String])).thenReturn(Try((): Unit))
 
       service.initialiseRepository(
         newRepoName        = "a-service",
         digitalServiceName = None,
         bootstrapTag       = None,
         privateRepo        = false,
-        githubToken        = "token",
-        defaultBranchName  = "bar"
+        githubToken        = "token"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "bar")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -184,7 +181,7 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
         "repoVisibility: public_0C3F0CE3E6E6448FAD341E7BFA50FCD333E06A20CFF05FCACE61154DDBBADF71",
         "hmrc-web-operations",
         "hmrc-web-operations@digital.hmrc.gov.uk")
-      verify(store).push("a-service", "bar")
+      verify(store).push("a-service")
       verifyNoMoreInteractions(store)
     }
 
@@ -192,24 +189,23 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
       val store   = mock[LocalGitStore]
       val service = new LocalGitService(store)
 
-      when(store.cloneRepoURL(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.cloneRepoURL(any[String])).thenReturn(Try((): Unit))
       when(store.commitFileToRoot(any[String], any[String], any[String], any[String], any[String]))
         .thenReturn(Try((): Unit))
       when(store.lastCommitSha(any[String])).thenReturn(Try(Some("abcd")))
       when(store.tagAnnotatedCommit(any[String], any[String], any[String], any[String])).thenReturn(Try((): Unit))
-      when(store.push(any[String], any[String])).thenReturn(Try((): Unit))
-      when(store.pushTags(any[String], any[String])).thenReturn(Try((): Unit))
+      when(store.push(any[String])).thenReturn(Try((): Unit))
+      when(store.pushTags(any[String])).thenReturn(Try((): Unit))
 
       service.initialiseRepository(
         newRepoName        = "a-service",
         digitalServiceName = Some("test"),
         bootstrapTag       = Some("0.1.0"),
         privateRepo        = true,
-        githubToken        = "token",
-        defaultBranchName  = "main"
+        githubToken        = "token"
       )
 
-      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service", "main")
+      verify(store).cloneRepoURL(s"https://token@github.com/hmrc/a-service")
       verify(store).commitFileToRoot(
         "a-service",
         ".gitignore",
@@ -229,10 +225,10 @@ class LocalGitServiceSpec extends WordSpec with Matchers with MockitoSugar {
           |digital-service: test""".stripMargin,
         "hmrc-web-operations",
         "hmrc-web-operations@digital.hmrc.gov.uk")
-      verify(store).push("a-service", "main")
+      verify(store).push("a-service")
       verify(store).tagAnnotatedCommit("a-service", "abcd", "Bootstrap tag", "0.1.0")
-      verify(store).push("a-service", "main")
-      verify(store).pushTags("a-service", "main")
+      verify(store).push("a-service")
+      verify(store).pushTags("a-service")
     }
 
 

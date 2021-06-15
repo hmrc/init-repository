@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,14 +54,14 @@ class GitSpecs
 
       val git2 = new LocalGitStore(storePath2)
 
-      git2.cloneRepoURL(s"${tempDir.resolve("test-repo")}", "main")
+      git2.cloneRepoURL(s"${tempDir.resolve("test-repo")}")
 
       storePath2.resolve("test-repo").resolve(".git").toFile.isDirectory shouldBe true
     }
   }
 
   def cloneThisRepo(git: LocalGitStore, targetDir: Path): Unit =
-    git.cloneRepoURL(thisProjectsPath.toString, "main")
+    git.cloneRepoURL(thisProjectsPath.toString)
 
   "Git.lastCommitSha" should {
     "get last commit sha " in {
